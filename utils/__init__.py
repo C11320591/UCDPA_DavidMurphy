@@ -6,7 +6,7 @@ import pandas as pd
 from bs4 import BeautifulSoup
 
 
-def generate_dataframe_from_url(url: str):
+def generate_dataframe_from_url(url: str, index: str):
     """
     :param url - the url to scrap the HTML table from
     """
@@ -14,6 +14,8 @@ def generate_dataframe_from_url(url: str):
     html_table = BeautifulSoup(html, "html5lib").find_all("table")[0]
 
     data_frame = pd.read_html(str(html_table), flavor="bs4", header=[0])[0]
+    if index:
+        data_frame.set_index(index.capitalize(), inplace=True)
     data_frame.dropna(axis="columns", inplace=True)  # Clean output
 
     return data_frame
@@ -26,7 +28,7 @@ def merge_dataframes(dataframes: list, key: str):
     """
     if not len(dataframes) == 2 or not key:
         raise Exception(
-            f"Two dataframes (list) and a index key (string) required.")
+            "Two dataframes (list) and a index key (string) required.")
 
     return dataframes[0].set_index(key).join(dataframes[1].set_index(key))
 
@@ -40,12 +42,23 @@ def extract_matching_charactors(pattern: str, strings: list):
     return list(map(lambda x: int(re.sub(r"{}".format(pattern), "", x)), strings))
 
 
-def convert_to_milliseconds(str_time: str):
-    """ Convert a lap time to milliseconds
+def convert_milliseconds(time: str):
+    """ Converts between lap time and milliseconds, 
+    depending on the presence of a colon in the input value which indicates lap time.
 
-    :param str_time
+    :param time
     """
     # TODO - how to convert a list of times: list(map(convert_to_milliseconds, list_of_times))
-    mins, sec, milli = re.split(r"[^\d]+", str_time)
 
-    return int(mins) * 60000 + int(sec) * 1000 + int(milli)
+    if ":" in str(time):
+        mins, sec, milliseconds = re.split(r"[^\d]+", time)
+        converted = int(mins) * 60000 + int(sec) * 1000 + int(milliseconds)
+
+    else:
+        mins, sec = divmod(int(time) / 1000, 60)
+        minutes = str(int(mins))
+        seconds = str(int(sec // 1))
+        milliseconds = str(sec % 1).split(".")[1][0:3]
+        converted = f"{minutes}:{seconds}.{milliseconds}"
+
+    return converted
