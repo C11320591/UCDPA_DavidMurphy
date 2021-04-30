@@ -2,7 +2,6 @@ import sys
 import urllib
 from datetime import datetime
 from bs4 import BeautifulSoup
-
 from exceptions.exceptions import *
 
 
@@ -50,12 +49,11 @@ def fetch_race_urls(year: str, circuit_name: str):
     :param circuit_name - which race?
     """
     races_in_year = fetch_base_urls(year)
-    # race_root_url = races_in_year.get(circuit_name.upper())
-    race_root_url = [v for k, v in races_in_year.items()
-                     if circuit_name.upper() in k][0]
-
-    if not race_root_url:
-        raise RaceDataNotFound
+    try:
+        race_root_url = [v for k, v in races_in_year.items()
+                         if circuit_name.upper() in k][0]
+    except IndexError:
+        raise RaceDataNotFoundException
 
     data_urls = [
         "race-result.html",

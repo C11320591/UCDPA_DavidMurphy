@@ -2,35 +2,8 @@ import re
 import sys
 import urllib
 import pandas as pd
-# from datetime import datetime
 from bs4 import BeautifulSoup
-
-
-def generate_dataframe_from_url(url: str, index: str):
-    """
-    :param url - the url to scrap the HTML table from
-    """
-    html = urllib.request.urlopen(url).read()
-    html_table = BeautifulSoup(html, "html5lib").find_all("table")[0]
-
-    data_frame = pd.read_html(str(html_table), flavor="bs4", header=[0])[0]
-    if index:
-        data_frame.set_index(index.capitalize(), inplace=True)
-    data_frame.dropna(axis="columns", inplace=True)  # Clean output
-
-    return data_frame
-
-
-def merge_dataframes(dataframes: list, key: str):
-    """
-    :param dataframes - a list of dataframes to merge
-    :param key - the index to join the frames on
-    """
-    if not len(dataframes) == 2 or not key:
-        raise Exception(
-            "Two dataframes (list) and a index key (string) required.")
-
-    return dataframes[0].set_index(key).join(dataframes[1].set_index(key))
+import matplotlib.pyplot as plt
 
 
 def extract_matching_charactors(pattern: str, strings: list):
@@ -62,3 +35,75 @@ def convert_milliseconds(time: str):
         converted = f"{minutes}:{seconds}.{milliseconds}"
 
     return converted
+
+
+def get_average(times: list):
+    """ Given a list of times, return the average in format {str: float}
+
+    :param times
+    """
+    if isinstance(times[0], str):
+        times = list(map(convert_milliseconds, times))
+
+    average_time = sum(times) / len(times)
+
+    return {convert_milliseconds(average_time): average_time}
+
+
+# Pandas functions
+
+def generate_dataframe_from_url(url: str, index: str = None):
+    """
+    :param url - the url to scrap the HTML table from
+    """
+    html = urllib.request.urlopen(url).read()
+    html_table = BeautifulSoup(html, "html5lib").find_all("table")[0]
+
+    data_frame = pd.read_html(str(html_table), flavor="bs4", header=[0])[0]
+    if index:
+        data_frame.set_index(index.capitalize(), inplace=True)
+    data_frame.dropna(axis="columns", inplace=True)  # Clean output
+
+    return data_frame
+
+
+def merge_dataframes(dataframes: list, key: str):
+    """
+    :param dataframes - a list of dataframes to merge
+    :param key - the index to join the frames on
+    """
+    if not len(dataframes) == 2 or not key:
+        raise Exception(
+            "Two dataframes (list) and a index key (string) required.")
+
+    return dataframes[0].set_index(key).join(dataframes[1].set_index(key))
+
+# Matplotlib functions
+
+
+def configure_graph(title: str, x_label: str,  y_label: str, x_intervals: list, y_intervals: list, set_grid=False):
+    """
+    """
+    plt.clf()
+    plt.grid(set_grid)
+    plt.title(title)
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+    plt.xticks(x_intervals)
+    # plt.yticks(y_intervals)
+
+
+def add_graph_data(x_data: list, y_data: list, label: str, marker: str, is_scatter=False):
+    """
+    """
+    if is_scatter:
+        plt.scatter(x_data, y_data, label=label, marker=marker)
+    else:
+        plt.plot(x_data, y_data, label=label, marker=marker)
+
+
+def export_graph(title: str, path: str):
+    """
+    """
+    plt.legend(title=title, bbox_to_anchor=(1.05, 1))
+    plt.savefig(path, bbox_inches='tight')
