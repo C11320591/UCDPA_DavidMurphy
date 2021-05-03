@@ -11,6 +11,8 @@ import utils
 from utils.f1_website_scraping import *
 from exceptions.exceptions import *
 
+GRAPHS_DIR = utils.fetch_config("GRAPHS_DIR")
+
 PROGRAM_USAGE = """
 
 Please select any of the following options:
@@ -25,6 +27,70 @@ Requires:
     1. --year (YYYY)
 
 """
+
+
+def places_gained_lost(year: str):
+    """ Identify how many places each driver gained/lost during the races of a year
+    """
+
+    drivers = list(utils.generate_dataframe_from_url(
+        f"https://www.formula1.com/en/results.html/{year}/drivers.html")["Driver"])
+
+    places = dict()
+    base_urls = fetch_base_urls(year)
+
+    for race in base_urls.values():
+
+        # Generate full urls
+        starting_grid_url = race + "starting-grid.html"
+        race_results_url = race + "race-results.html"
+
+        # Generate dataframes from the tables scrapped using the urls
+        start_pos = utils.generate_dataframe_from_url(
+            starting_grid_url, index="Driver")
+        end_pos = utils.generate_dataframe_from_url(
+            race_results_url, index="Driver")
+
+        # Identify race participants from race-results dataframe
+        race_participants = list(end_pos.index)
+
+        for driver in drivers:
+            if driver not in race_participants:
+                continue
+            try:
+                driver_start_pos = start_pos.index.get_loc(driver)
+            except KeyError:  # if driver not in the starting-grid dataframe, put to back of grid
+                driver_start_pos = 20
+
+            # Deduce how many places each driver gain/lost
+            driver_end_pos = end_pos.index.get_loc(driver)
+            diff = driver_start_pos - driver_end_pos
+            # Update the value for existing driver places (+/-) - otherwise, add new dict key (driver)
+
+            if driver in places.keys():
+                places[driver] += diff
+            else:
+                places[driver] = diff
+
+        # Sort items using their integer values
+        places = dict(
+            sorted(places.items(), key=lambda item: item[1], reverse=True))
+
+    # Configure a graph to plot places gained/lost
+    utils.configure_graph(
+        title="Places Gained/Lost in {}".format(year),
+        x_label="Round number",
+        y_label="Points",
+        x_intervals="",
+        y_intervals="",
+        set_grid=False)
+
+
+    utils.add_graph_data(places.keys(), places.values(), "", "", yticks_label=list(
+        map(lambda d: d[-3:], places.keys())), barh=True)
+
+    utils.export_graph(
+        f"Places Gained/Lost {year}", f"{GRAPHS_DIR}/gained_lost-{year}.png")
 
 
 def get_fastest_lap_times(year: str, circuit: str):
@@ -57,7 +123,6 @@ def year_in_review(year: str):
     race_number = list(range(1, number_of_races + 1))
 
     # Configure a graph to plot driver data
-
     utils.configure_graph(
         title="F1 Results {}".format(year),
         x_label="Round number",
@@ -76,7 +141,7 @@ def year_in_review(year: str):
         for driver in race_data.iterrows():
             driver_name, points = driver[1]["Driver"], driver[1]["PTS"]
 
-            # If this is a drivers first race, add them to the drivers dictionary
+            # If this is a drivers first race, add them to drivers
             if not driver_name in drivers.keys():
                 drivers.update({driver_name: [points]})
                 continue
@@ -98,14 +163,14 @@ def year_in_review(year: str):
             for m in range(missed):
                 drivers[driver].insert(0, 0)
 
-    # Plot the data
+    # Plot a line for each driver that participated in the season
     for driver, points in drivers.items():
         utils.add_graph_data(race_number, points, driver,
                              ".", is_scatter=False)
 
-    # Export graph
+    # Export grapH
     utils.export_graph("F1 Results {}".format(
-        year), "/home/ubuntu/results-{}.png".format(year))
+        year), "/{}/results-{}.png".format(GRAPHS_DIR, year))
 
 
 if __name__ == "__main__":
@@ -119,7 +184,8 @@ if __name__ == "__main__":
 
     options = [
         "fastest-laps",
-        "year-in-review"
+        "year-in-review",
+        "gained-lost"
     ]
 
     if not args.option or args.option not in options:
@@ -127,3 +193,6 @@ if __name__ == "__main__":
 
     if args.option == "year-in-review":
         year_in_review(args.year)
+
+    if args.option == "gained-lost":
+        places_gained_lost(args.year)

@@ -1,16 +1,31 @@
 import re
 import sys
 import urllib
+import configparser
 import pandas as pd
 from bs4 import BeautifulSoup
 import matplotlib.pyplot as plt
+
+
+CONFIG_FILE = "/home/ubuntu/assignment/repo/config/system_configs.ini"
+
+
+def fetch_config(key: str):
+    """ Assuming a key exists in the config file, return its value.
+    """
+    config = configparser.ConfigParser()
+    config.read(CONFIG_FILE)
+
+    try:
+        return config['config'][key]
+    except KeyError:
+        sys.exit(f"There is no configuration for {key} in the config file.")
 
 
 def extract_matching_charactors(pattern: str, strings: list):
     """ Remove charactors from a list of strings that do not match a pattern.
     Example: "[^\d]+" - non-numerical charactors
 
-    :param strings (list)
     """
     return list(map(lambda x: int(re.sub(r"{}".format(pattern), "", x)), strings))
 
@@ -82,28 +97,36 @@ def merge_dataframes(dataframes: list, key: str):
 
 
 def configure_graph(title: str, x_label: str,  y_label: str, x_intervals: list, y_intervals: list, set_grid=False):
-    """
+    """ PLACEHOLDER. FILL THIS IN!
     """
     plt.clf()
     plt.grid(set_grid)
     plt.title(title)
     plt.xlabel(x_label)
     plt.ylabel(y_label)
-    plt.xticks(x_intervals)
+    # plt.xticks(x_intervals)
     # plt.yticks(y_intervals)
 
 
-def add_graph_data(x_data: list, y_data: list, label: str, marker: str, is_scatter=False):
-    """
+def add_graph_data(x_data: list, y_data: list, label: str = None, marker: str = None, color: str = None, yticks_label: list = None, is_scatter=False, barh=False):
+    """ PLACEHOLDER. FILL THIS IN!
     """
     if is_scatter:
         plt.scatter(x_data, y_data, label=label, marker=marker)
+    elif barh:
+        fig, ax = plt.subplots()
+        ax.invert_yaxis()
+        plt.yticks(ticks=list(range(1, len(x_data) + 1)), labels=yticks_label)
+        for x, y in zip(x_data, y_data):
+            label = x[-3:]
+            color = "red" if y < 0 else "green"
+            ax.barh(x, y, color=color, label=label, align="center")
     else:
         plt.plot(x_data, y_data, label=label, marker=marker)
 
 
 def export_graph(title: str, path: str):
-    """
+    """ PLACEHOLDER. FILL THIS IN!
     """
     plt.legend(title=title, bbox_to_anchor=(1.05, 1))
     plt.savefig(path, bbox_inches='tight')
