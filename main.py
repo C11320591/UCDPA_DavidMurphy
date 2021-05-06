@@ -110,15 +110,17 @@ def get_fastest_lap_times(years: list, circuits: list):
         yearly_avg = dict()
         for year in sorted(years):
             try:
-                fastest_lap_url = fetch_race_urls(year, circuit)["FASTEST-LAPS"]
+                fastest_lap_url = fetch_race_urls(
+                    year, circuit)["FASTEST-LAPS"]
             except RaceDataNotFoundException:
                 continue
-            
+
             df = utils.generate_dataframe_from_url(fastest_lap_url, index="No")
             lap_times_str = list(df["Time"])
-            
+
             # Convert the time str into microseconds int for the purpose of averaging
-            avg_fastest_lap = utils.get_average(list(map(lambda d: utils.convert_milliseconds(d), lap_times_str)))
+            avg_fastest_lap = utils.get_average(
+                list(map(lambda d: utils.convert_milliseconds(d), lap_times_str)))
 
             yearly_avg[int(year)] = avg_fastest_lap
 
@@ -133,10 +135,10 @@ def get_fastest_lap_times(years: list, circuits: list):
 
         # return x, y, labels
         utils.add_graph_data(x, y, label=circuit, marker=".")
-   
+
     # Export graph
     utils.export_graph("Average Fastest Laps",
-        "/{}/fl-test.png".format(GRAPHS_DIR), use_legend=True)
+                       "/{}/fl-test.png".format(GRAPHS_DIR), use_legend=True)
 
 
 def year_in_review(year: str):
@@ -230,5 +232,7 @@ if __name__ == "__main__":
 
     if args.option == "fastest-laps":
         start, end = args.year.split("-")
-        circuits = ["Monza", "Silverstone", "Monaco", "Spielberg", "Marina Bay"]
-        get_fastest_lap_times(years=list(range(int(start), int(end))), circuits=circuits)
+        circuits = ["Monza", "Silverstone",
+                    "Monaco", "Spielberg", "Marina Bay"]
+        get_fastest_lap_times(years=list(
+            range(int(start), int(end))), circuits=circuits)

@@ -105,7 +105,7 @@ def configure_graph(title: str, x_label: str,  y_label: str, x_intervals: list =
     plt.title(title)
     plt.xlabel(x_label)
     plt.ylabel(y_label)
-    
+
     if x_intervals:
         plt.xticks(x_intervals)
     if y_intervals:
@@ -129,7 +129,7 @@ def add_graph_data(x_data: list, y_data: list, label: str = None, marker: str = 
         plt.plot(x_data, y_data, label=label, marker=marker)
 
 
-def export_graph(title: str, path: str, use_legend = False):
+def export_graph(title: str, path: str, use_legend=False):
     """ PLACEHOLDER. FILL THIS IN!
     """
     if use_legend:
