@@ -62,7 +62,8 @@ def get_average(times: list):
 
     average_time = sum(times) / len(times)
 
-    return {convert_milliseconds(average_time): average_time}
+    # return {convert_milliseconds(average_time): average_time}
+    return [convert_milliseconds(average_time), average_time]
 
 
 # Pandas functions
@@ -96,7 +97,7 @@ def merge_dataframes(dataframes: list, key: str):
 # Matplotlib functions
 
 
-def configure_graph(title: str, x_label: str,  y_label: str, x_intervals: list, y_intervals: list, set_grid=False):
+def configure_graph(title: str, x_label: str,  y_label: str, x_intervals: list = None, y_intervals: list = None, set_grid=False):
     """ PLACEHOLDER. FILL THIS IN!
     """
     plt.clf()
@@ -104,11 +105,14 @@ def configure_graph(title: str, x_label: str,  y_label: str, x_intervals: list, 
     plt.title(title)
     plt.xlabel(x_label)
     plt.ylabel(y_label)
-    # plt.xticks(x_intervals)
-    # plt.yticks(y_intervals)
+    
+    if x_intervals:
+        plt.xticks(x_intervals)
+    if y_intervals:
+        plt.yticks(y_intervals)
 
 
-def add_graph_data(x_data: list, y_data: list, label: str = None, marker: str = None, color: str = None, yticks_label: list = None, is_scatter=False, barh=False):
+def add_graph_data(x_data: list, y_data: list, label: str = None, marker: str = None, color: str = None, xticks_label: list = None, yticks_label: list = None, is_scatter=False, barh=False):
     """ PLACEHOLDER. FILL THIS IN!
     """
     if is_scatter:
@@ -119,14 +123,15 @@ def add_graph_data(x_data: list, y_data: list, label: str = None, marker: str = 
         plt.yticks(ticks=list(range(1, len(x_data) + 1)), labels=yticks_label)
         for x, y in zip(x_data, y_data):
             label = x[-3:]
-            color = "red" if y < 0 else "green"
+            color = "red" if y < 0 else "lime"
             ax.barh(x, y, color=color, label=label, align="center")
     else:
         plt.plot(x_data, y_data, label=label, marker=marker)
 
 
-def export_graph(title: str, path: str):
+def export_graph(title: str, path: str, use_legend = False):
     """ PLACEHOLDER. FILL THIS IN!
     """
-    plt.legend(title=title, bbox_to_anchor=(1.05, 1))
+    if use_legend:
+        plt.legend(title=title, bbox_to_anchor=(1.05, 1))
     plt.savefig(path, bbox_inches='tight')

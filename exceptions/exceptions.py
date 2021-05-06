@@ -11,6 +11,6 @@ class MissingParametersException(Exception):
     """
     """
 
-    def __init__(self, message="No data found at url"):
+    def __init__(self, message="Woah, missing some parameters are we?"):
         self.message = message
         super().__init__(self.message)

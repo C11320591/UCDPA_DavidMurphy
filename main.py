@@ -1,17 +1,14 @@
 #!/usr/bin/env python3
 
-"""
+""" PLACEHOLDER. FILL THIS IN!
 """
 import os
 import sys
 import argparse
-# from collections import Counter
 
 import utils
 from utils.f1_website_scraping import *
 from exceptions.exceptions import *
-
-GRAPHS_DIR = utils.fetch_config("GRAPHS_DIR")
 
 PROGRAM_USAGE = """
 
@@ -27,6 +24,9 @@ Requires:
     1. --year (YYYY)
 
 """
+
+# Globals
+GRAPHS_DIR = utils.fetch_config("GRAPHS_DIR")
 
 
 def places_gained_lost(year: str):
@@ -72,40 +72,71 @@ def places_gained_lost(year: str):
             else:
                 places[driver] = diff
 
-        # Sort items using their integer values
-        places = dict(
-            sorted(places.items(), key=lambda item: item[1], reverse=True))
+    # Sort items using their integer values
+    places = dict(
+        sorted(places.items(), key=lambda item: item[1], reverse=True))
 
     # Configure a graph to plot places gained/lost
     utils.configure_graph(
-        title="Places Gained/Lost in {}".format(year),
+        title=f"Places Gained/Lost in {year}",
         x_label="Round number",
-        y_label="Points",
-        x_intervals="",
-        y_intervals="",
-        set_grid=False)
+        y_label="Places",
+        x_intervals=list(places.values()),
+        y_intervals=list(places.values()))
 
-
-    utils.add_graph_data(places.keys(), places.values(), "", "", yticks_label=list(
+    utils.add_graph_data(places.keys(), places.values(), label="Test", yticks_label=list(
         map(lambda d: d[-3:], places.keys())), barh=True)
 
     utils.export_graph(
         f"Places Gained/Lost {year}", f"{GRAPHS_DIR}/gained_lost-{year}.png")
 
 
-def get_fastest_lap_times(year: str, circuit: str):
+def get_fastest_lap_times(years: list, circuits: list):
     """ Return a DataFrame for the fastest laps for a circuit in year.
     """
-    if not year or not circuit:
+    if not years or not circuits:
         raise MissingParametersException
 
-    try:
-        fastest_lap_url = fetch_race_urls(year, circuit)["FASTEST-LAPS"]
-    except RaceDataNotFoundException:
-        print("Nothing here.")
-        raise
+    # Configure a graph to plot driver data
+    utils.configure_graph(
+        title="Average Fastest Laps",
+        x_label="Year",
+        y_label="Time (μs)",
+        x_intervals=years,
+        set_grid=False)
 
-    return utils.generate_dataframe_from_url(fastest_lap_url, index="No")
+    for circuit in circuits:
+
+        yearly_avg = dict()
+        for year in sorted(years):
+            try:
+                fastest_lap_url = fetch_race_urls(year, circuit)["FASTEST-LAPS"]
+            except RaceDataNotFoundException:
+                continue
+            
+            df = utils.generate_dataframe_from_url(fastest_lap_url, index="No")
+            lap_times_str = list(df["Time"])
+            
+            # Convert the time str into microseconds int for the purpose of averaging
+            avg_fastest_lap = utils.get_average(list(map(lambda d: utils.convert_milliseconds(d), lap_times_str)))
+
+            yearly_avg[int(year)] = avg_fastest_lap
+
+        if not yearly_avg:
+            # sys.exit("No races found. Verify params: year={} circuit={}".format(year, circuit))
+            continue
+
+        # return yearly_avg
+        x = list(yearly_avg.keys())
+        y = list(map(lambda d: d[1], yearly_avg.values()))
+        labels = list(map(lambda d: d[0], yearly_avg.values()))
+
+        # return x, y, labels
+        utils.add_graph_data(x, y, label=circuit, marker=".")
+   
+    # Export graph
+    utils.export_graph("Average Fastest Laps",
+        "/{}/fl-test.png".format(GRAPHS_DIR), use_legend=True)
 
 
 def year_in_review(year: str):
@@ -121,15 +152,6 @@ def year_in_review(year: str):
 
     number_of_races = len(base_urls)  # This will be the x-axis
     race_number = list(range(1, number_of_races + 1))
-
-    # Configure a graph to plot driver data
-    utils.configure_graph(
-        title="F1 Results {}".format(year),
-        x_label="Round number",
-        y_label="Points",
-        x_intervals=race_number,
-        y_intervals="",
-        set_grid=True)
 
     drivers = {}
 
@@ -163,21 +185,30 @@ def year_in_review(year: str):
             for m in range(missed):
                 drivers[driver].insert(0, 0)
 
+    # Configure a graph to plot driver data
+    utils.configure_graph(
+        title="F1 Results {}".format(year),
+        x_label="Round number",
+        y_label="Points",
+        x_intervals=race_number,
+        y_intervals="",
+        set_grid=False)
+
     # Plot a line for each driver that participated in the season
     for driver, points in drivers.items():
         utils.add_graph_data(race_number, points, driver,
                              ".", is_scatter=False)
 
-    # Export grapH
+    # Export graph
     utils.export_graph("F1 Results {}".format(
-        year), "/{}/results-{}.png".format(GRAPHS_DIR, year))
+        year), "/{}/results-{}.png".format(GRAPHS_DIR, year), use_legend=True)
 
 
 if __name__ == "__main__":
 
     # Handle arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument("--option")
+    parser.add_argument("-o", "--option")
     parser.add_argument("--year")
     parser.add_argument("--circuit")
     args = parser.parse_args()
@@ -196,3 +227,8 @@ if __name__ == "__main__":
 
     if args.option == "gained-lost":
         places_gained_lost(args.year)
+
+    if args.option == "fastest-laps":
+        start, end = args.year.split("-")
+        circuits = ["Monza", "Silverstone", "Monaco", "Spielberg", "Marina Bay"]
+        get_fastest_lap_times(years=list(range(int(start), int(end))), circuits=circuits)
