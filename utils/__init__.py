@@ -1,7 +1,9 @@
+import os
 import re
 import sys
 import urllib
 import configparser
+import numpy as np
 import pandas as pd
 from bs4 import BeautifulSoup
 import matplotlib.pyplot as plt
@@ -36,8 +38,6 @@ def convert_milliseconds(time: str):
 
     :param time
     """
-    # TODO - how to convert a list of times: list(map(convert_to_milliseconds, list_of_times))
-
     if ":" in str(time):
         mins, sec, milliseconds = re.split(r"[^\d]+", time)
         converted = int(mins) * 60000 + int(sec) * 1000 + int(milliseconds)
@@ -62,14 +62,28 @@ def get_average(times: list):
 
     average_time = sum(times) / len(times)
 
-    # return {convert_milliseconds(average_time): average_time}
     return [convert_milliseconds(average_time), average_time]
 
 
-# Pandas functions
+"""
+Pandas functions
+"""
+
+
+def csv_documents():
+    """ PLACEHOLDER. FILL THIS IN!
+    """
+    root = fetch_config("CSV_DATA_PATH")
+
+    documents = dict()
+    for doc in os.listdir(root):
+        documents[doc.split(".csv")[0].upper()] = root + doc
+
+    return documents
+
 
 def generate_dataframe_from_url(url: str, index: str = None):
-    """
+    """ PLACEHOLDER. FILL THIS IN!
     :param url - the url to scrap the HTML table from
     """
     html = urllib.request.urlopen(url).read()
@@ -83,8 +97,18 @@ def generate_dataframe_from_url(url: str, index: str = None):
     return data_frame
 
 
-def merge_dataframes(dataframes: list, key: str):
+def generate_dataframe_from_csv(file: str, index: str = None):
+    """ PLACEHOLDER. FILL THIS IN!
     """
+    data_frame = pd.read_csv(file)
+    if index:
+        data_frame.set_index(inplace=True)
+
+    return data_frame
+
+
+def join_dataframes(dataframes: list, key: str):
+    """ PLACEHOLDER. FILL THIS IN!
     :param dataframes - a list of dataframes to merge
     :param key - the index to join the frames on
     """
@@ -94,7 +118,10 @@ def merge_dataframes(dataframes: list, key: str):
 
     return dataframes[0].set_index(key).join(dataframes[1].set_index(key))
 
-# Matplotlib functions
+
+"""
+Matplotlib functions
+"""
 
 
 def configure_graph(title: str, x_label: str,  y_label: str, x_intervals: list = None, y_intervals: list = None, set_grid=False):
@@ -126,7 +153,7 @@ def add_graph_data(x_data: list, y_data: list, label: str = None, marker: str = 
             color = "red" if y < 0 else "lime"
             ax.barh(x, y, color=color, label=label, align="center")
     else:
-        plt.plot(x_data, y_data, label=label, marker=marker)
+        plt.plot(x_data, y_data, color=color, label=label, marker=marker)
 
 
 def export_graph(title: str, path: str, use_legend=False):

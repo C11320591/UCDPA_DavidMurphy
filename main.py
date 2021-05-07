@@ -5,6 +5,7 @@
 import os
 import sys
 import argparse
+import numpy as np
 
 import utils
 from utils.f1_website_scraping import *
@@ -16,10 +17,14 @@ Please select any of the following options:
 
 Option: "fastest-laps"
 Requires:
-    1. --year (YYYY) 
+    1. --years (YYYY) 
     2. --circuit (for example: "Monza")
 
 Option: "year-in-review"
+Requires:
+    1. --year (YYYY)
+
+Option: ""gained-lost"
 Requires:
     1. --year (YYYY)
 
@@ -91,8 +96,9 @@ def places_gained_lost(year: str):
         f"Places Gained/Lost {year}", f"{GRAPHS_DIR}/gained_lost-{year}.png")
 
 
-def get_fastest_lap_times(years: list, circuits: list):
-    """ Return a DataFrame for the fastest laps for a circuit in year.
+def avg_fastest_lap_times(years: list, circuits: list):
+    """ Generate a graph to illustrate the average fastest lap for a
+    circuit in a range of years
     """
     if not years or not circuits:
         raise MissingParametersException
@@ -141,7 +147,77 @@ def get_fastest_lap_times(years: list, circuits: list):
                        "/{}/fl-test.png".format(GRAPHS_DIR), use_legend=True)
 
 
-def year_in_review(year: str):
+def constructors_season(year: str, highlighted_team: str = None):
+    """ Using some CSVs documents, generate graphs to illustrate
+    constructors championship in a specified year
+    """
+    if not year:
+        raise MissingParametersException
+
+    documents = utils.csv_documents()
+    race_results = dict()
+
+    races_df = utils.generate_dataframe_from_csv(documents["RACES"])
+    race_ids = list(races_df.loc[races_df["year"] == int(year)]["raceId"])
+
+    constructors_df = utils.generate_dataframe_from_csv(
+        documents["CONSTRUCTORS"])
+
+    constructors_results_df = utils.generate_dataframe_from_csv(
+        documents["CONSTRUCTOR_RESULTS"])
+    results_in_year = constructors_results_df[constructors_results_df.raceId.isin(
+        race_ids)]
+    constructor_ids = set(results_in_year["constructorId"])
+    full_df = utils.join_dataframes(
+        [constructors_df, results_in_year], key="constructorId")
+
+    for constructor in constructor_ids:
+        constructor_name = constructors_df.loc[constructors_df["constructorId"] == constructor]["name"].item(
+        )
+        constructor_points = list(
+            full_df.loc[full_df.index == constructor]["points"])
+        race_results[constructor_name] = constructor_points
+
+    utils.configure_graph(
+        title="Constructors Championship {}".format(year),
+        x_label="Race Number",
+        y_label="Points",
+        x_intervals=list(range(1, len(race_ids) + 1)),
+        set_grid=False)
+
+    for constructor, points in race_results.items():
+        color = "orange" if highlighted_team == constructor else "grey"
+        utils.add_graph_data(race_ids, points, color=color,
+                             label=constructor, marker=".")
+
+    # Export graph
+    utils.export_graph("Constructors Championship {}".format(year),
+                       "/{}/constructors_h2h-{}.png".format(GRAPHS_DIR, year), use_legend=True)
+
+    race_results_accum = dict()
+    for team, points in race_results.items():
+        race_results_accum[team] = list(np.cumsum(points))
+
+    # Graph the constructors season for this year
+    # Configure a graph to plot driver data
+    utils.configure_graph(
+        title="Constructors Championship {}".format(year),
+        x_label="Race Number",
+        y_label="Points",
+        x_intervals=list(range(1, len(race_ids) + 1)),
+        set_grid=False)
+
+    for constructor, points in race_results_accum.items():
+        color = "orange" if highlighted_team == constructor else "grey"
+        utils.add_graph_data(race_ids, points, color=color,
+                             label=constructor, marker=".")
+
+    # Export graph
+    utils.export_graph("Constructors Championship {}".format(year),
+                       "/{}/constructors-{}.png".format(GRAPHS_DIR, year), use_legend=True)
+
+
+def drivers_season(year: str):
     """ Generate a graph illustrating the points accumulated
     by each driver in a specified year.
     """
@@ -211,13 +287,15 @@ if __name__ == "__main__":
     # Handle arguments
     parser = argparse.ArgumentParser()
     parser.add_argument("-o", "--option")
-    parser.add_argument("--year")
+    parser.add_argument("-y", "--year")
+    parser.add_argument("--team")
     parser.add_argument("--circuit")
     args = parser.parse_args()
 
     options = [
         "fastest-laps",
         "year-in-review",
+        "constructors-year",
         "gained-lost"
     ]
 
@@ -225,14 +303,19 @@ if __name__ == "__main__":
         sys.exit(PROGRAM_USAGE)
 
     if args.option == "year-in-review":
-        year_in_review(args.year)
+        drivers_season(args.year)
 
     if args.option == "gained-lost":
         places_gained_lost(args.year)
+
+    if args.option == "constructors-year":
+        team = args.team if args.team else None
+        constructors_season(args.year, highlighted_team=team)
 
     if args.option == "fastest-laps":
         start, end = args.year.split("-")
         circuits = ["Monza", "Silverstone",
                     "Monaco", "Spielberg", "Marina Bay"]
-        get_fastest_lap_times(years=list(
+
+        avg_fastest_lap_times(years=list(
             range(int(start), int(end))), circuits=circuits)
