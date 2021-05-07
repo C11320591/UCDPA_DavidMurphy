@@ -97,8 +97,8 @@ def places_gained_lost(year: str):
 
 
 def avg_fastest_lap_times(years: list, circuits: list):
-    """ Generate a graph to illustrate the average fastest lap for a
-    circuit in a range of years
+    """ Scrap the Formula 1 website to generate a graph to 
+    illustrate the average fastest lap for a circuit in a range of years
     """
     if not years or not circuits:
         raise MissingParametersException
@@ -147,6 +147,38 @@ def avg_fastest_lap_times(years: list, circuits: list):
                        "/{}/fl-test.png".format(GRAPHS_DIR), use_legend=True)
 
 
+def fetch_year_data(entity: str, year: int):
+    """
+    """
+    documents = utils.csv_documents()
+    races_df = utils.generate_dataframe_from_csv(documents["RACES"])
+    race_ids = list(races_df.loc[races_df["year"] == int(year)]["raceId"])
+
+    results_df = utils.generate_dataframe_from_csv(documents["RESULTS"])
+
+    if entity.upper() == "DRIVER":
+        drivers_df = utils.generate_dataframe_from_csv(documents["DRIVERS"])
+        # Drop columns not required
+        drivers_df = drivers_df[["driverId", "code"]]
+        full_df = utils.join_dataframes(
+            [results_df, drivers_df], key="driverId")
+
+        return race_ids, full_df
+
+    if entity.upper() in ["CONSTRUCTOR", "TEAM"]:
+        constructors_df = utils.generate_dataframe_from_csv(
+            documents["CONSTRUCTORS"])
+        constructors_results_df = utils.generate_dataframe_from_csv(
+            documents["CONSTRUCTOR_RESULTS"])
+        results_in_year = constructors_results_df[constructors_results_df.raceId.isin(
+            race_ids)]
+        constructor_ids = set(results_in_year["constructorId"])
+        full_df = utils.join_dataframes(
+            [constructors_df, results_in_year], key="constructorId")
+
+        return race_ids, constructor_ids, constructors_df, full_df
+
+
 def constructors_season(year: str, highlighted_team: str = None):
     """ Using some CSVs documents, generate graphs to illustrate
     constructors championship in a specified year
@@ -154,22 +186,9 @@ def constructors_season(year: str, highlighted_team: str = None):
     if not year:
         raise MissingParametersException
 
-    documents = utils.csv_documents()
+    race_ids, constructor_ids, constructors_df, full_df = fetch_year_data(
+        "CONSTRUCTOR", year)
     race_results = dict()
-
-    races_df = utils.generate_dataframe_from_csv(documents["RACES"])
-    race_ids = list(races_df.loc[races_df["year"] == int(year)]["raceId"])
-
-    constructors_df = utils.generate_dataframe_from_csv(
-        documents["CONSTRUCTORS"])
-
-    constructors_results_df = utils.generate_dataframe_from_csv(
-        documents["CONSTRUCTOR_RESULTS"])
-    results_in_year = constructors_results_df[constructors_results_df.raceId.isin(
-        race_ids)]
-    constructor_ids = set(results_in_year["constructorId"])
-    full_df = utils.join_dataframes(
-        [constructors_df, results_in_year], key="constructorId")
 
     for constructor in constructor_ids:
         constructor_name = constructors_df.loc[constructors_df["constructorId"] == constructor]["name"].item(
@@ -178,21 +197,25 @@ def constructors_season(year: str, highlighted_team: str = None):
             full_df.loc[full_df.index == constructor]["points"])
         race_results[constructor_name] = constructor_points
 
+    number_races = list(range(1, len(race_ids) + 1))
+
     utils.configure_graph(
-        title="Constructors Championship {}".format(year),
+        title="Constructors Championshisp {}".format(year),
         x_label="Race Number",
         y_label="Points",
-        x_intervals=list(range(1, len(race_ids) + 1)),
+        x_intervals=number_races,
         set_grid=False)
 
     for constructor, points in race_results.items():
-        color = "orange" if highlighted_team == constructor else "grey"
+        color = "grey"
+        if highlighted_team and highlighted_team.upper() == constructor.upper():
+            color = "orange"
         utils.add_graph_data(race_ids, points, color=color,
                              label=constructor, marker=".")
 
     # Export graph
     utils.export_graph("Constructors Championship {}".format(year),
-                       "/{}/constructors_h2h-{}.png".format(GRAPHS_DIR, year), use_legend=True)
+                       "/{}/constructors_championship_h2h-{}.png".format(GRAPHS_DIR, year), use_legend=True)
 
     race_results_accum = dict()
     for team, points in race_results.items():
@@ -204,82 +227,103 @@ def constructors_season(year: str, highlighted_team: str = None):
         title="Constructors Championship {}".format(year),
         x_label="Race Number",
         y_label="Points",
-        x_intervals=list(range(1, len(race_ids) + 1)),
+        x_intervals=number_races,
         set_grid=False)
 
     for constructor, points in race_results_accum.items():
-        color = "orange" if highlighted_team == constructor else "grey"
+        color = "grey"
+        if highlighted_team and highlighted_team.upper() == constructor.upper():
+            color = "orange"
         utils.add_graph_data(race_ids, points, color=color,
                              label=constructor, marker=".")
 
     # Export graph
     utils.export_graph("Constructors Championship {}".format(year),
-                       "/{}/constructors-{}.png".format(GRAPHS_DIR, year), use_legend=True)
+                       "/{}/constructors_championship-{}.png".format(GRAPHS_DIR, year), use_legend=True)
 
 
-def drivers_season(year: str):
+def drivers_season(year: str, highlighted_driver: str = None):
     """ Generate a graph illustrating the points accumulated
     by each driver in a specified year.
     """
     if not year:
         raise MissingParametersException
 
-    # Get list of race-results urls for year
-    base_urls = fetch_base_urls(year)
-    race_results_url = "race-results.html"
+    race_ids, full_df = fetch_year_data("DRIVER", year)
 
-    number_of_races = len(base_urls)  # This will be the x-axis
-    race_number = list(range(1, number_of_races + 1))
+    # race_results = dict()
+    race_results = dict()
+    for race in race_ids:
+        data = full_df.loc[full_df["raceId"] ==
+                           race][["code", "points"]].to_dict()
+        drivers, points = list(data["code"].values()), list(
+            data["points"].values())
 
-    drivers = {}
+        for r in range(0, len(drivers)):
+            driver = drivers[r]
+            point = int(points[r])
 
-    for race in base_urls.values():
-        full_url = race + race_results_url
-
-        race_data = utils.generate_dataframe_from_url(full_url)
-
-        for driver in race_data.iterrows():
-            driver_name, points = driver[1]["Driver"], driver[1]["PTS"]
-
-            # If this is a drivers first race, add them to drivers
-            if not driver_name in drivers.keys():
-                drivers.update({driver_name: [points]})
+            if driver in race_results.keys():
+                race_results[driver].append(point)
                 continue
+            race_results[driver] = [point]
 
-            current_points = drivers[driver_name][-1]
-            drivers[driver_name].append(current_points + points)
+        for not_racing in [x for x in race_results.keys() if x not in drivers]:
+            race_results[not_racing].append(0)
 
-        # If a driver was not included in this race, append the same points as their previous race.
-        not_racing = list(set(drivers.keys()) - set(race_data["Driver"]))
-        if not_racing:
-            for driver in not_racing:
-                drivers[driver].append(drivers[driver][-1])
+    # Prepend zeros for drivers who did not start the season
+    for driver in race_results.keys():
+        missed = len(race_ids) - len(race_results[driver])
 
-    # For drivers who did not start the season (eg. reserve drivers), prepend a list of n zeros
-    # for the races they did not participate in.
-    for driver in drivers:
-        if len(drivers[driver]) < number_of_races:
-            missed = number_of_races - len(drivers[driver])
-            for m in range(missed):
-                drivers[driver].insert(0, 0)
+        for missed_race in range(missed):
+            race_results[driver].insert(0, 0)
 
-    # Configure a graph to plot driver data
+    number_races = list(range(1, len(race_ids) + 1))
+
     utils.configure_graph(
-        title="F1 Results {}".format(year),
-        x_label="Round number",
+        title="Drivers Championshisp {}".format(year),
+        x_label="Race Number",
         y_label="Points",
-        x_intervals=race_number,
-        y_intervals="",
+        x_intervals=number_races,
         set_grid=False)
 
-    # Plot a line for each driver that participated in the season
-    for driver, points in drivers.items():
-        utils.add_graph_data(race_number, points, driver,
-                             ".", is_scatter=False)
+    for driver, points in race_results.items():
+        color = "grey"
+        if highlighted_driver and highlighted_driver.upper() == driver.upper():
+            color = "orange"
+        utils.add_graph_data(race_ids, points, color=color,
+                             label=driver, marker=".")
 
     # Export graph
-    utils.export_graph("F1 Results {}".format(
-        year), "/{}/results-{}.png".format(GRAPHS_DIR, year), use_legend=True)
+    utils.export_graph("Drivers Championship {}".format(year),
+                       "/{}/drivers_championship_per_race-{}.png".format(GRAPHS_DIR, year), use_legend=True)
+
+    race_results_accum = dict()
+    for driver, points in race_results.items():
+        race_results_accum[driver] = list(np.cumsum(points))
+
+    max_points = max(list(map(lambda d: d[-1], race_results_accum.values())))
+
+    y_intervals = list(np.arange(0, max_points, 25))
+
+    utils.configure_graph(
+        title="Drivers Championship {}".format(year),
+        x_label="Race Number",
+        y_label="Points",
+        x_intervals=number_races,
+        y_intervals=y_intervals,
+        set_grid=False)
+
+    for driver, points in race_results_accum.items():
+        color = "grey"
+        if highlighted_driver and highlighted_driver.upper() == driver.upper():
+            color = "orange"
+        utils.add_graph_data(race_ids, points, color=color,
+                             label=driver, marker=".")
+
+    # Export graph
+    utils.export_graph("Drivers Championship {}".format(year),
+                       "/{}/drivers_championship-{}.png".format(GRAPHS_DIR, year), use_legend=True)
 
 
 if __name__ == "__main__":
@@ -288,13 +332,14 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-o", "--option")
     parser.add_argument("-y", "--year")
-    parser.add_argument("--team")
-    parser.add_argument("--circuit")
+    parser.add_argument("-c", "--constructor")
+    parser.add_argument("-d", "--driver")
+    parser.add_argument"-t", ("--track")
     args = parser.parse_args()
 
     options = [
         "fastest-laps",
-        "year-in-review",
+        "drivers-year",
         "constructors-year",
         "gained-lost"
     ]
@@ -302,8 +347,9 @@ if __name__ == "__main__":
     if not args.option or args.option not in options:
         sys.exit(PROGRAM_USAGE)
 
-    if args.option == "year-in-review":
-        drivers_season(args.year)
+    if args.option == "drivers-year":
+        driver = args.driver if args.driver else None
+        drivers_season(args.year, highlighted_driver=driver)
 
     if args.option == "gained-lost":
         places_gained_lost(args.year)
@@ -313,6 +359,7 @@ if __name__ == "__main__":
         constructors_season(args.year, highlighted_team=team)
 
     if args.option == "fastest-laps":
+        # TODO: Refactor this!
         start, end = args.year.split("-")
         circuits = ["Monza", "Silverstone",
                     "Monaco", "Spielberg", "Marina Bay"]
