@@ -38,6 +38,9 @@ def convert_milliseconds(time: str):
 
     :param time
     """
+    if "\\N" in str(time):
+        return
+
     if ":" in str(time):
         mins, sec, milliseconds = re.split(r"[^\d]+", time)
         converted = int(mins) * 60000 + int(sec) * 1000 + int(milliseconds)
@@ -57,7 +60,10 @@ def get_average(times: list):
 
     :param times
     """
+    # times = [x for x in times if "\\N" not in x]
+
     if isinstance(times[0], str):
+        times = [x for x in times if ":" in x]
         times = list(map(convert_milliseconds, times))
 
     average_time = sum(times) / len(times)

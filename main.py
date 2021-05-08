@@ -96,59 +96,67 @@ def places_gained_lost(year: str):
         f"Places Gained/Lost {year}", f"{GRAPHS_DIR}/gained_lost-{year}.png")
 
 
-def avg_fastest_lap_times(years: list, circuits: list):
-    """ Scrap the Formula 1 website to generate a graph to 
-    illustrate the average fastest lap for a circuit in a range of years
+def fastest_lap_times(year: str, highlighted_driver: str = None):
+    """ Scrap the Formula 1 website to generate a graph to
+    illustrate the average fastest in year
     """
-    if not years or not circuits:
+    if not year:
         raise MissingParametersException
 
-    # Configure a graph to plot driver data
-    utils.configure_graph(
-        title="Average Fastest Laps",
-        x_label="Year",
-        y_label="Time (μs)",
-        x_intervals=years,
-        set_grid=False)
+    if int(year) < 2004:
+        sys.exit("No race data for {} before 2004".format(year))
+        # TODO: Use web scraping to get data for years prior to 2004
 
-    for circuit in circuits:
+    race_ids, full_df = fetch_year_data("LAPS", year)
 
-        yearly_avg = dict()
-        for year in sorted(years):
-            try:
-                fastest_lap_url = fetch_race_urls(
-                    year, circuit)["FASTEST-LAPS"]
-            except RaceDataNotFoundException:
-                continue
+    if highlighted_driver:
+        highlighted_driver_times = dict()
 
-            df = utils.generate_dataframe_from_url(fastest_lap_url, index="No")
-            lap_times_str = list(df["Time"])
+    fastest_laps = dict()
+    for race in race_ids:
+        data = full_df.loc[full_df["raceId"] == race][[
+            "code", "fastestLapTime"]].to_dict()
 
-            # Convert the time str into microseconds int for the purpose of averaging
-            avg_fastest_lap = utils.get_average(
-                list(map(lambda d: utils.convert_milliseconds(d), lap_times_str)))
-
-            yearly_avg[int(year)] = avg_fastest_lap
-
-        if not yearly_avg:
-            # sys.exit("No races found. Verify params: year={} circuit={}".format(year, circuit))
+        drivers = list(data["code"].values())
+        lap_times = list(data["fastestLapTime"].values())
+        try:
+            fastest_laps[race] = utils.get_average(lap_times)[-1]
+        except ZeroDivisionError:
+            print("No lap times recorded for RaceId {} in year {}".format(race, year))
             continue
 
-        # return yearly_avg
-        x = list(yearly_avg.keys())
-        y = list(map(lambda d: d[1], yearly_avg.values()))
-        labels = list(map(lambda d: d[0], yearly_avg.values()))
+        if highlighted_driver and highlighted_driver.upper() in drivers:
+            highlighted_driver_index = drivers.index(
+                highlighted_driver.upper())
+            driver_lap_time = utils.convert_milliseconds(
+                lap_times[highlighted_driver_index])
+            highlighted_driver_times[race] = driver_lap_time
 
-        # return x, y, labels
-        utils.add_graph_data(x, y, label=circuit, marker=".")
+    number_races = list(range(1, len(race_ids) + 1))
+    utils.configure_graph(
+        title="Avg. Fastest Lap {}".format(year),
+        x_label="Race Number",
+        y_label="Time (μs)",
+        x_intervals=number_races,
+        set_grid=False)
+
+    utils.add_graph_data(fastest_laps.keys(), fastest_laps.values(
+    ), color="grey", label="avg", marker=".")
+
+    if highlighted_driver:
+        for race, time in highlighted_driver_times.items():
+            if not time:
+                continue
+            utils.add_graph_data([race], [time], marker="x",
+                                 color="red", is_scatter=True)
 
     # Export graph
-    utils.export_graph("Average Fastest Laps",
-                       "/{}/fl-test.png".format(GRAPHS_DIR), use_legend=True)
+    utils.export_graph("Avg. Fastest Lap {}".format(year),
+                       "/{}/avg_fastest_laps-{}.png".format(GRAPHS_DIR, year), use_legend=True)
 
 
 def fetch_year_data(entity: str, year: int):
-    """
+    """ FILL THIS IN!
     """
     documents = utils.csv_documents()
     races_df = utils.generate_dataframe_from_csv(documents["RACES"])
@@ -156,10 +164,33 @@ def fetch_year_data(entity: str, year: int):
 
     results_df = utils.generate_dataframe_from_csv(documents["RESULTS"])
 
+    if entity.upper() == "LAPS":
+        drivers_df = utils.generate_dataframe_from_csv(documents["DRIVERS"])[
+            ["driverId", "code", "surname"]]
+        # Pull rows in drivers where code = "\N" and use surname as code
+        for driver, values in drivers_df.iterrows():
+            id,  code, surname = values[["driverId", "code", "surname"]]
+            if code == "\\N":
+                drivers_df.loc[drivers_df["driverId"] == id, ["code"]] = surname.replace(" ", "")[
+                    :3].upper()
+
+        full_df = utils.join_dataframes(
+            [results_df, drivers_df], key="driverId")
+
+        full_df.sort_values(by=["raceId"], inplace=True)
+
+        return race_ids, full_df
+
     if entity.upper() == "DRIVER":
-        drivers_df = utils.generate_dataframe_from_csv(documents["DRIVERS"])
-        # Drop columns not required
-        drivers_df = drivers_df[["driverId", "code"]]
+        drivers_df = utils.generate_dataframe_from_csv(
+            documents["DRIVERS"])[["driverId", "code"]]
+        # Pull rows in drivers where code = "\N" and use surname as code
+        for driver, values in drivers_df.iterrows():
+            id,  code, surname = values[["driverId", "code", "surname"]]
+            if code == "\\N":
+                drivers_df.loc[drivers_df["driverId"] == id, ["code"]] = surname.replace(" ", "")[
+                    :3].upper()
+
         full_df = utils.join_dataframes(
             [results_df, drivers_df], key="driverId")
 
@@ -200,7 +231,7 @@ def constructors_season(year: str, highlighted_team: str = None):
     number_races = list(range(1, len(race_ids) + 1))
 
     utils.configure_graph(
-        title="Constructors Championshisp {}".format(year),
+        title="Constructors Championship {}".format(year),
         x_label="Race Number",
         y_label="Points",
         x_intervals=number_races,
@@ -281,7 +312,7 @@ def drivers_season(year: str, highlighted_driver: str = None):
     number_races = list(range(1, len(race_ids) + 1))
 
     utils.configure_graph(
-        title="Drivers Championshisp {}".format(year),
+        title="Drivers Championship {}".format(year),
         x_label="Race Number",
         y_label="Points",
         x_intervals=number_races,
@@ -334,7 +365,7 @@ if __name__ == "__main__":
     parser.add_argument("-y", "--year")
     parser.add_argument("-c", "--constructor")
     parser.add_argument("-d", "--driver")
-    parser.add_argument"-t", ("--track")
+    parser.add_argument("-t", "--track")
     args = parser.parse_args()
 
     options = [
@@ -347,22 +378,17 @@ if __name__ == "__main__":
     if not args.option or args.option not in options:
         sys.exit(PROGRAM_USAGE)
 
+    if args.option == "gained-lost":
+        places_gained_lost(args.year)
+
+    if args.option == "fastest-laps":
+        driver = args.driver if args.driver else None
+        fastest_lap_times(args.year, highlighted_driver=driver)
+
     if args.option == "drivers-year":
         driver = args.driver if args.driver else None
         drivers_season(args.year, highlighted_driver=driver)
 
-    if args.option == "gained-lost":
-        places_gained_lost(args.year)
-
     if args.option == "constructors-year":
         team = args.team if args.team else None
         constructors_season(args.year, highlighted_team=team)
-
-    if args.option == "fastest-laps":
-        # TODO: Refactor this!
-        start, end = args.year.split("-")
-        circuits = ["Monza", "Silverstone",
-                    "Monaco", "Spielberg", "Marina Bay"]
-
-        avg_fastest_lap_times(years=list(
-            range(int(start), int(end))), circuits=circuits)
