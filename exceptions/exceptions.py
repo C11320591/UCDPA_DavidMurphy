@@ -1,5 +1,5 @@
 class RaceDataNotFoundException(Exception):
-    """
+    """ Raise this exception if no data available at url
     """
 
     def __init__(self, message="No data found at url"):
@@ -8,7 +8,7 @@ class RaceDataNotFoundException(Exception):
 
 
 class MissingParametersException(Exception):
-    """
+    """ Raise this exception if a required parameter is absent.
     """
 
     def __init__(self, message="Woah, missing some parameters are we?"):

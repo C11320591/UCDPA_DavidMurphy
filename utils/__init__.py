@@ -60,11 +60,12 @@ def get_average(times: list):
 
     :param times
     """
-    # times = [x for x in times if "\\N" not in x]
 
     if isinstance(times[0], str):
         times = [x for x in times if ":" in x]
         times = list(map(convert_milliseconds, times))
+    else:
+        times = [x for x in times if isinstance(x, int)]
 
     average_time = sum(times) / len(times)
 
@@ -125,6 +126,61 @@ def join_dataframes(dataframes: list, key: str):
     return dataframes[0].set_index(key).join(dataframes[1].set_index(key))
 
 
+def fetch_year_data(entity: str, year: int):
+    """ FILL THIS IN!
+    """
+    documents = csv_documents()
+    races_df = generate_dataframe_from_csv(documents["RACES"])
+    race_ids = list(races_df.loc[races_df["year"] == int(year)]["raceId"])
+
+    results_df = generate_dataframe_from_csv(documents["RESULTS"])
+
+    if entity.upper() == "LAPS":
+        drivers_df = generate_dataframe_from_csv(documents["DRIVERS"])[
+            ["driverId", "code", "surname"]]
+        # Pull rows in drivers where code = "\N" and use surname as code
+        for driver, values in drivers_df.iterrows():
+            id,  code, surname = values[["driverId", "code", "surname"]]
+            if code == "\\N":
+                drivers_df.loc[drivers_df["driverId"] == id, ["code"]] = surname.replace(" ", "")[
+                    :3].upper()
+
+        full_df = join_dataframes(
+            [results_df, drivers_df], key="driverId")
+
+        full_df.sort_values(by=["raceId"], inplace=True)
+
+        return race_ids, full_df
+
+    if entity.upper() == "DRIVER":
+        drivers_df = generate_dataframe_from_csv(
+            documents["DRIVERS"])[["driverId", "code", "surname"]]
+        # Pull rows in drivers where code = "\N" and use surname as code
+        for driver, values in drivers_df.iterrows():
+            id,  code, surname = values[["driverId", "code", "surname"]]
+            if code == "\\N":
+                drivers_df.loc[drivers_df["driverId"] == id, ["code"]] = surname.replace(" ", "")[
+                    :3].upper()
+
+        full_df = join_dataframes(
+            [results_df, drivers_df], key="driverId")
+
+        return race_ids, full_df
+
+    if entity.upper() in ["CONSTRUCTOR", "TEAM"]:
+        constructors_df = generate_dataframe_from_csv(
+            documents["CONSTRUCTORS"])
+        constructors_results_df = generate_dataframe_from_csv(
+            documents["CONSTRUCTOR_RESULTS"])
+        results_in_year = constructors_results_df[constructors_results_df.raceId.isin(
+            race_ids)]
+        constructor_ids = set(results_in_year["constructorId"])
+        full_df = join_dataframes(
+            [constructors_df, results_in_year], key="constructorId")
+
+        return race_ids, constructor_ids, constructors_df, full_df
+
+
 """
 Matplotlib functions
 """
@@ -168,3 +224,8 @@ def export_graph(title: str, path: str, use_legend=False):
     if use_legend:
         plt.legend(title=title, bbox_to_anchor=(1.05, 1))
     plt.savefig(path, bbox_inches='tight')
+
+
+"""
+Seaborn functions
+"""

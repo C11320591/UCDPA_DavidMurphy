@@ -8,8 +8,8 @@ import argparse
 import numpy as np
 
 import utils
-from utils.f1_website_scraping import *
 from exceptions.exceptions import *
+from utils.f1_website_scraping import *
 
 PROGRAM_USAGE = """
 
@@ -37,6 +37,8 @@ GRAPHS_DIR = utils.fetch_config("GRAPHS_DIR")
 def places_gained_lost(year: str):
     """ Identify how many places each driver gained/lost during the races of a year
     """
+    if not year:
+        raise MissingParametersException("year parameter required.")
 
     drivers = list(utils.generate_dataframe_from_url(
         f"https://www.formula1.com/en/results.html/{year}/drivers.html")["Driver"])
@@ -97,42 +99,71 @@ def places_gained_lost(year: str):
 
 
 def fastest_lap_times(year: str, highlighted_driver: str = None):
-    """ Scrap the Formula 1 website to generate a graph to
-    illustrate the average fastest in year
+    """ FILL THIS IN!
     """
     if not year:
-        raise MissingParametersException
+        raise MissingParametersException("year parameter required.")
 
-    if int(year) < 2004:
-        sys.exit("No race data for {} before 2004".format(year))
-        # TODO: Use web scraping to get data for years prior to 2004
-
-    race_ids, full_df = fetch_year_data("LAPS", year)
-
+    fastest_laps = dict()
     if highlighted_driver:
         highlighted_driver_times = dict()
 
-    fastest_laps = dict()
-    for race in race_ids:
-        data = full_df.loc[full_df["raceId"] == race][[
-            "code", "fastestLapTime"]].to_dict()
+    if int(year) < 2004:
+        print(
+            "Woah, we don't have that on file. Scraping Formula1 website for that stuff.. ")
+        base_urls = fetch_base_urls(year)
 
-        drivers = list(data["code"].values())
-        lap_times = list(data["fastestLapTime"].values())
-        try:
-            fastest_laps[race] = utils.get_average(lap_times)[-1]
-        except ZeroDivisionError:
-            print("No lap times recorded for RaceId {} in year {}".format(race, year))
-            continue
+        race_ids = list()
 
-        if highlighted_driver and highlighted_driver.upper() in drivers:
-            highlighted_driver_index = drivers.index(
-                highlighted_driver.upper())
-            driver_lap_time = utils.convert_milliseconds(
-                lap_times[highlighted_driver_index])
-            highlighted_driver_times[race] = driver_lap_time
+        # fastest_laps = dict()
+        for race, url in base_urls.items():
+            fastest_lap_url = url + "fastest-laps.html"
+
+            fastest_laps_df = utils.generate_dataframe_from_url(
+                fastest_lap_url, index="Driver")
+
+            drivers = list(map(lambda d: d[-3:], list(fastest_laps_df.index)))
+            try:
+                lap_times = list(map(lambda d: utils.convert_milliseconds(
+                    d), list(fastest_laps_df["Time"])))
+            except KeyError:
+                continue
+            average = utils.get_average(lap_times)
+            race_ids.append(race)
+            fastest_laps[race] = average[-1]
+
+            if highlighted_driver and highlighted_driver.upper() in drivers:
+                highlighted_driver_index = drivers.index(
+                    highlighted_driver.upper())
+                driver_lap_time = utils.convert_milliseconds(
+                    lap_times[highlighted_driver_index])
+                highlighted_driver_times[race] = driver_lap_time
+
+    else:
+        race_ids, full_df = utils.fetch_year_data("LAPS", year)
+
+        for race in race_ids:
+            data = full_df.loc[full_df["raceId"] == race][[
+                "code", "fastestLapTime"]].to_dict()
+
+            drivers = list(data["code"].values())
+            lap_times = list(data["fastestLapTime"].values())
+            try:
+                fastest_laps[race] = utils.get_average(lap_times)[-1]
+            except ZeroDivisionError:
+                print(
+                    "No lap times recorded for RaceId {} in year {}".format(race, year))
+                continue
+
+            if highlighted_driver and highlighted_driver.upper() in drivers:
+                highlighted_driver_index = drivers.index(
+                    highlighted_driver.upper())
+                driver_lap_time = utils.convert_milliseconds(
+                    lap_times[highlighted_driver_index])
+                highlighted_driver_times[race] = driver_lap_time
 
     number_races = list(range(1, len(race_ids) + 1))
+
     utils.configure_graph(
         title="Avg. Fastest Lap {}".format(year),
         x_label="Race Number",
@@ -140,8 +171,8 @@ def fastest_lap_times(year: str, highlighted_driver: str = None):
         x_intervals=number_races,
         set_grid=False)
 
-    utils.add_graph_data(fastest_laps.keys(), fastest_laps.values(
-    ), color="grey", label="avg", marker=".")
+    utils.add_graph_data(number_races, fastest_laps.values(),
+                         color="grey", label="avg", marker=".")
 
     if highlighted_driver:
         for race, time in highlighted_driver_times.items():
@@ -155,69 +186,14 @@ def fastest_lap_times(year: str, highlighted_driver: str = None):
                        "/{}/avg_fastest_laps-{}.png".format(GRAPHS_DIR, year), use_legend=True)
 
 
-def fetch_year_data(entity: str, year: int):
-    """ FILL THIS IN!
-    """
-    documents = utils.csv_documents()
-    races_df = utils.generate_dataframe_from_csv(documents["RACES"])
-    race_ids = list(races_df.loc[races_df["year"] == int(year)]["raceId"])
-
-    results_df = utils.generate_dataframe_from_csv(documents["RESULTS"])
-
-    if entity.upper() == "LAPS":
-        drivers_df = utils.generate_dataframe_from_csv(documents["DRIVERS"])[
-            ["driverId", "code", "surname"]]
-        # Pull rows in drivers where code = "\N" and use surname as code
-        for driver, values in drivers_df.iterrows():
-            id,  code, surname = values[["driverId", "code", "surname"]]
-            if code == "\\N":
-                drivers_df.loc[drivers_df["driverId"] == id, ["code"]] = surname.replace(" ", "")[
-                    :3].upper()
-
-        full_df = utils.join_dataframes(
-            [results_df, drivers_df], key="driverId")
-
-        full_df.sort_values(by=["raceId"], inplace=True)
-
-        return race_ids, full_df
-
-    if entity.upper() == "DRIVER":
-        drivers_df = utils.generate_dataframe_from_csv(
-            documents["DRIVERS"])[["driverId", "code"]]
-        # Pull rows in drivers where code = "\N" and use surname as code
-        for driver, values in drivers_df.iterrows():
-            id,  code, surname = values[["driverId", "code", "surname"]]
-            if code == "\\N":
-                drivers_df.loc[drivers_df["driverId"] == id, ["code"]] = surname.replace(" ", "")[
-                    :3].upper()
-
-        full_df = utils.join_dataframes(
-            [results_df, drivers_df], key="driverId")
-
-        return race_ids, full_df
-
-    if entity.upper() in ["CONSTRUCTOR", "TEAM"]:
-        constructors_df = utils.generate_dataframe_from_csv(
-            documents["CONSTRUCTORS"])
-        constructors_results_df = utils.generate_dataframe_from_csv(
-            documents["CONSTRUCTOR_RESULTS"])
-        results_in_year = constructors_results_df[constructors_results_df.raceId.isin(
-            race_ids)]
-        constructor_ids = set(results_in_year["constructorId"])
-        full_df = utils.join_dataframes(
-            [constructors_df, results_in_year], key="constructorId")
-
-        return race_ids, constructor_ids, constructors_df, full_df
-
-
 def constructors_season(year: str, highlighted_team: str = None):
     """ Using some CSVs documents, generate graphs to illustrate
     constructors championship in a specified year
     """
     if not year:
-        raise MissingParametersException
+        raise MissingParametersException("year parameter required.")
 
-    race_ids, constructor_ids, constructors_df, full_df = fetch_year_data(
+    race_ids, constructor_ids, constructors_df, full_df = utils.fetch_year_data(
         "CONSTRUCTOR", year)
     race_results = dict()
 
@@ -280,7 +256,7 @@ def drivers_season(year: str, highlighted_driver: str = None):
     if not year:
         raise MissingParametersException
 
-    race_ids, full_df = fetch_year_data("DRIVER", year)
+    race_ids, full_df = utils.fetch_year_data("DRIVER", year)
 
     # race_results = dict()
     race_results = dict()
@@ -390,5 +366,5 @@ if __name__ == "__main__":
         drivers_season(args.year, highlighted_driver=driver)
 
     if args.option == "constructors-year":
-        team = args.team if args.team else None
+        team = args.constructor if args.constructor else None
         constructors_season(args.year, highlighted_team=team)
