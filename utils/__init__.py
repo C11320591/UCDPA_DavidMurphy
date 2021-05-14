@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 from bs4 import BeautifulSoup
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 
 CONFIG_FILE = "/home/ubuntu/assignment/repo/config/system_configs.ini"
@@ -109,7 +110,7 @@ def generate_dataframe_from_csv(file: str, index: str = None):
     """
     data_frame = pd.read_csv(file)
     if index:
-        data_frame.set_index(inplace=True)
+        data_frame.set_index(index, inplace=True)
 
     return data_frame
 
@@ -126,7 +127,7 @@ def join_dataframes(dataframes: list, key: str):
     return dataframes[0].set_index(key).join(dataframes[1].set_index(key))
 
 
-def fetch_year_data(entity: str, year: int):
+def fetch_year_data(year: int, entity: str = None):
     """ FILL THIS IN!
     """
     documents = csv_documents()
@@ -134,6 +135,9 @@ def fetch_year_data(entity: str, year: int):
     race_ids = list(races_df.loc[races_df["year"] == int(year)]["raceId"])
 
     results_df = generate_dataframe_from_csv(documents["RESULTS"])
+
+    if not entity:
+        return race_ids, results_df
 
     if entity.upper() == "LAPS":
         drivers_df = generate_dataframe_from_csv(documents["DRIVERS"])[
@@ -222,10 +226,12 @@ def export_graph(title: str, path: str, use_legend=False):
     """ PLACEHOLDER. FILL THIS IN!
     """
     if use_legend:
-        plt.legend(title=title, bbox_to_anchor=(1.05, 1))
+        plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
     plt.savefig(path, bbox_inches='tight')
 
 
 """
 Seaborn functions
 """
+
+# TODO: Add + use some functions here
