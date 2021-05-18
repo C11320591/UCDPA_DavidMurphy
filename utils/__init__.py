@@ -1,7 +1,9 @@
 import os
 import re
 import sys
+import json
 import urllib
+import pathlib
 import configparser
 import numpy as np
 import pandas as pd
@@ -11,6 +13,18 @@ import seaborn as sns
 
 
 CONFIG_FILE = "/home/ubuntu/assignment/repo/config/system_configs.ini"
+DEFINITIONS_FILE = f"{pathlib.Path(__file__).parent.absolute()}/definitions.json"
+# DEFINITIONS_FILE = f"utils/definitions.json"
+
+
+def fetch_definitions(key: str):
+    """ PLACEHOLDER. FILL THIS IN!
+    """
+
+    with open(DEFINITIONS_FILE, "r") as definitions_file:
+        definitions = json.load(definitions_file)
+
+    return definitions[key]
 
 
 def fetch_config(key: str):

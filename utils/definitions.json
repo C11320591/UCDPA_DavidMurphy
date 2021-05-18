@@ -1,0 +1,84 @@
+{
+    "RETIREMENT_CAUSES": {
+        "Collision": [
+            "Collision"
+        ],
+        "Accident / Spun off" : [
+            "Accident",
+            "Spun off"
+        ],
+        "Mechanical" : [
+            "Brakes",
+            "Crankshaft",
+            "Differential",
+            "Driveshaft",
+            "Drivetrain",
+            "Exhaust",
+            "Fuel pressure",
+            "Fuel pump",
+            "Fuel rig",
+            "Fuel",
+            "Gearbox",
+            "Halfshaft",
+            "Hydraulics",
+            "Mechanical",
+            "Oil leak",
+            "Oil line",
+            "Oil pressure",
+            "Overheating",
+            "Overheating",
+            "Power loss",
+            "Radiator",
+            "Radiator",
+            "Spark plugs",
+            "Steering",
+            "Suspension",
+            "Throttle",
+            "Track rod",
+            "Turbo",
+            "Tyre",
+            "Water leak"
+        ],
+        "Electrical": [
+            "Alternator",
+            "Battery",
+            "ERS",
+            "Electrical",
+            "Electronics",
+            "Launch control",
+            "Power Unit"
+        ],
+        "Wheels / Brakes" : [
+            "Brake duct",
+            "Brakes",
+            "Puncture",
+            "Tyre",
+            "Vibrations",
+            "Wheel bearing",
+            "Wheel nut",
+            "Wheel rim",
+            "Wheel"
+        ],
+        "Body" : [
+            "Front wing",
+            "Rear wing",
+            "Broken wing"
+        ],
+        "Other" : [
+            "Laps",
+            "Driver Seat",
+            "Engine misfire",
+            "Heat shield fire",
+            "Not restarted",
+            "Out of fuel",
+            "Out of fuel",
+            "Physical",
+            "Pneumatics",
+            "Retired",
+            "Seat",
+            "Stalled",
+            "Technical",
+            "Water pressure"
+        ]
+    }
+}

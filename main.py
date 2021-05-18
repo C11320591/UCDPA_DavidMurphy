@@ -49,7 +49,7 @@ COLOURS = [
 ]
 
 
-def retirements(years: list):
+def retirements(years: str):
     """ PLACEHOLDER. FILL THIS IN!
     """
     if not years:
@@ -62,6 +62,8 @@ def retirements(years: list):
 
     status_df = utils.generate_dataframe_from_csv(
         utils.csv_documents()["STATUS"])
+
+    retirement_causes = utils.fetch_definitions("RETIREMENT_CAUSES")
 
     status_code = dict()
     drivers = Counter()
@@ -87,6 +89,30 @@ def retirements(years: list):
                 continue
             annual_retirements[year][status] += 1
 
+    for status, count in retirements.items():
+        if not status in status_code.keys():
+            status_name = status_df.loc[status_df["statusId"]
+                                        == status]["status"].values[0]
+            status_code[status] = status_name
+
+    total = pd.DataFrame(retirements.items(), columns=["statusId", "count"])
+    total["statusId"] = total["statusId"].map(status_code)
+    total.sort_values(by=["count"], ascending=False, inplace=True)
+
+    # Configure Graph
+    plt.clf()
+    sns.set_theme(style="darkgrid", font="sans")
+    fig = plt.gcf()
+    fig.set_size_inches(18.5, 10.5)
+    plt.title("Retirements in {}".format(years))
+    sns.barplot(x="count", y="statusId", data=total)
+    plt.xlabel("Count")
+    plt.ylabel("Cause")
+
+    # Export graph
+    utils.export_graph("Retirements in {}".format(years),
+                       "/{}/retirements_bc-{}.png".format(GRAPHS_DIR, years), use_legend=True)
+
     retirements_pc = dict()
 
     for status, num in retirements.items():
@@ -98,8 +124,27 @@ def retirements(years: list):
         percentage = (num / sum(retirements.values())) * 100
         retirements_pc[name] = round(percentage, 3)
 
-    print(retirements_pc)
-    # TODO: Pick up here, time to generate some graphs based on the above data collected.
+    causes = list(retirement_causes.keys())
+    retirement_stats = Counter()
+    for cause, pc in retirements_pc.items():
+        for c in causes:
+            if cause in retirement_causes[c]:
+                retirement_stats[c] += pc
+
+    labels = list(retirement_stats.keys())
+    percentages = list(retirement_stats.values())
+
+    # Configure Graph
+    plt.clf()
+    sns.set_theme(style="darkgrid", font="sans")
+    fig1, ax1 = plt.subplots()
+    ax1.pie(percentages, labels=labels,
+            autopct='%1.1f%%', shadow=True, startangle=90)
+    ax1.axis('equal')
+
+    # Export graph
+    utils.export_graph("Retirements in {}".format(years),
+                       "/{}/retirements_pie-{}.png".format(GRAPHS_DIR, years), use_legend=True)
 
 
 def places_gained_lost(year: str):
@@ -227,7 +272,6 @@ def fastest_lap_times(year: str, params: str = None):
     plt.ylabel("Time (seconds)")
     plt.grid(True)
 
-
     params = params.split(",") if params else ['Average', 'Fastest', 'Slowest']
 
     # Plot data
@@ -237,9 +281,8 @@ def fastest_lap_times(year: str, params: str = None):
             if col == param:
                 color = COLOURS.pop(random.randrange(len(COLOURS)))
                 plt.plot(fastest_laps_df.index,
-                    fastest_laps_df[col], color=color, label=param, linestyle="--")
+                         fastest_laps_df[col], color=color, label=param, linestyle="--")
             continue
-
 
         plt.plot(fastest_laps_df.index,
                  fastest_laps_df[col], color="grey", label=None, alpha=0.25)
@@ -249,7 +292,7 @@ def fastest_lap_times(year: str, params: str = None):
                        "/{}/fastest-laps-{}.png".format(GRAPHS_DIR, year), use_legend=True)
 
 
-def constructors_season(year: str, highlighted_team: str = None):
+def constructors_season(year: str, params: str = None):
     """ Using some CSVs documents, generate graphs to illustrate
     constructors championship in a specified year
     """
@@ -278,8 +321,8 @@ def constructors_season(year: str, highlighted_team: str = None):
 
     for constructor, points in race_results.items():
         color = "grey"
-        if highlighted_team and highlighted_team.upper() == constructor.upper():
-            color = "orange"
+        if params and params.upper() == constructor.upper():
+            color = COLOURS.pop(random.randrange(len(COLOURS)))
         utils.add_graph_data(race_ids, points, color=color,
                              label=constructor, marker=".")
 
@@ -302,8 +345,8 @@ def constructors_season(year: str, highlighted_team: str = None):
 
     for constructor, points in race_results_accum.items():
         color = "grey"
-        if highlighted_team and highlighted_team.upper() == constructor.upper():
-            color = "orange"
+        if params and params.upper() == constructor.upper():
+            color = COLOURS.pop(random.randrange(len(COLOURS)))
         utils.add_graph_data(race_ids, points, color=color,
                              label=constructor, marker=".")
 
@@ -312,7 +355,7 @@ def constructors_season(year: str, highlighted_team: str = None):
                        "/{}/constructors_championship-{}.png".format(GRAPHS_DIR, year), use_legend=True)
 
 
-def drivers_season(year: str, highlighted_driver: str = None):
+def drivers_season(year: str, params: str = None):
     """ Generate a graph illustrating the points accumulated
     by each driver in a specified year.
     """
@@ -359,8 +402,8 @@ def drivers_season(year: str, highlighted_driver: str = None):
 
     for driver, points in race_results.items():
         color = "grey"
-        if highlighted_driver and highlighted_driver.upper() == driver.upper():
-            color = "orange"
+        if params and params.upper() == driver.upper():
+            color = COLOURS.pop(random.randrange(len(COLOURS)))
         utils.add_graph_data(race_ids, points, color=color,
                              label=driver, marker=".")
 
@@ -386,8 +429,8 @@ def drivers_season(year: str, highlighted_driver: str = None):
 
     for driver, points in race_results_accum.items():
         color = "grey"
-        if highlighted_driver and highlighted_driver.upper() == driver.upper():
-            color = "orange"
+        if params and params.upper() == driver.upper():
+            color = COLOURS.pop(random.randrange(len(COLOURS)))
         utils.add_graph_data(race_ids, points, color=color,
                              label=driver, marker=".")
 
@@ -402,9 +445,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-o", "--option")
     parser.add_argument("-y", "--year")
-    parser.add_argument("-c", "--constructor")
-    parser.add_argument("-d", "--driver")
-    parser.add_argument("-t", "--track")
     parser.add_argument("-p", "--params")
     args = parser.parse_args()
 
@@ -416,6 +456,7 @@ if __name__ == "__main__":
         "retirements"
     ]
 
+    # Set params as None if not set by user input
     params = args.params if args.params else None
 
     if not args.option or args.option not in options:
@@ -428,12 +469,10 @@ if __name__ == "__main__":
         fastest_lap_times(args.year, params=params)
 
     if args.option == "drivers-year":
-        driver = args.driver if args.driver else None
-        drivers_season(args.year, highlighted_driver=driver)
+        drivers_season(args.year, params=params)
 
     if args.option == "constructors-year":
-        team = args.constructor if args.constructor else None
-        constructors_season(args.year, highlighted_team=team)
+        constructors_season(args.year, params=params)
 
     if args.option == "retirements":
         retirements(args.year)
