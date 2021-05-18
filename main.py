@@ -4,6 +4,7 @@
 """
 import os
 import sys
+import random
 import argparse
 import numpy as np
 import pandas as pd
@@ -36,6 +37,16 @@ Requires:
 
 # Globals
 GRAPHS_DIR = utils.fetch_config("GRAPHS_DIR")
+
+COLOURS = [
+    "blue",
+    "green",
+    "red",
+    "cyan",
+    "magenta",
+    "yellow",
+    "black"
+]
 
 
 def retirements(years: list):
@@ -160,7 +171,7 @@ def places_gained_lost(year: str):
         f"Places Gained/Lost {year}", f"{GRAPHS_DIR}/gained_lost-{year}.png")
 
 
-def fastest_lap_times(year: str, highlighted_driver: str = None):
+def fastest_lap_times(year: str, params: str = None):
     """ FILL THIS IN!
     """
     if not year:
@@ -216,24 +227,20 @@ def fastest_lap_times(year: str, highlighted_driver: str = None):
     plt.ylabel("Time (seconds)")
     plt.grid(True)
 
+
+    params = params.split(",") if params else ['Average', 'Fastest', 'Slowest']
+
     # Plot data
     for index, col in enumerate(fastest_laps_df.columns):
-        if col == "Average":
-            plt.plot(fastest_laps_df.index,
-                     fastest_laps_df[col], color="black", label="Average", linestyle="--")
-            continue
-        if col == "Fastest":
-            plt.plot(fastest_laps_df.index,
-                     fastest_laps_df[col], color="green", label="Fastest")
-            continue
-        if col == "Slowest":
-            plt.plot(fastest_laps_df.index,
-                     fastest_laps_df[col], color="yellow", label="Slowest")
-            continue
-        if highlighted_driver:
-            if col == highlighted_driver.upper():
+
+        for param in params:
+            if col == param:
+                color = COLOURS.pop(random.randrange(len(COLOURS)))
                 plt.plot(fastest_laps_df.index,
-                         fastest_laps_df[col], color="red", label=highlighted_driver.upper())
+                    fastest_laps_df[col], color=color, label=param, linestyle="--")
+            continue
+
+
         plt.plot(fastest_laps_df.index,
                  fastest_laps_df[col], color="grey", label=None, alpha=0.25)
 
@@ -398,6 +405,7 @@ if __name__ == "__main__":
     parser.add_argument("-c", "--constructor")
     parser.add_argument("-d", "--driver")
     parser.add_argument("-t", "--track")
+    parser.add_argument("-p", "--params")
     args = parser.parse_args()
 
     options = [
@@ -408,6 +416,8 @@ if __name__ == "__main__":
         "retirements"
     ]
 
+    params = args.params if args.params else None
+
     if not args.option or args.option not in options:
         sys.exit(PROGRAM_USAGE)
 
@@ -415,8 +425,7 @@ if __name__ == "__main__":
         places_gained_lost(args.year)
 
     if args.option == "fastest-laps":
-        driver = args.driver if args.driver else None
-        fastest_lap_times(args.year, highlighted_driver=driver)
+        fastest_lap_times(args.year, params=params)
 
     if args.option == "drivers-year":
         driver = args.driver if args.driver else None
