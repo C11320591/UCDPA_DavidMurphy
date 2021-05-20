@@ -7,7 +7,7 @@ Generate a series of charts to visualize Formula 1 race statistics from a specif
 ### Notes
 * Charts are generated using data collected from either local csv files or via scraping the Formula1 website.
 * The bar/line/pie charts are generated depending on the option selected during execution and are stored in a directory
-specified in the [config][https://github.com/C11320591/UCDPA_DavidMurphy/blob/master/config/system_configs.ini] file.
+specified in the [config](https://github.com/C11320591/UCDPA_DavidMurphy/blob/master/config/system_configs.ini) file.
 
 ### Usage
 ```
@@ -22,4 +22,4 @@ specified in the [config][https://github.com/C11320591/UCDPA_DavidMurphy/blob/ma
 
 
 ### Resources
-* [**UCDPA: Certificate in Introductory Data Analytics**](https://www.ucd.ie/professionalacademy/findyourcourse/pd_data_analytics/)
+* Course &rarr; [**UCDPA: Certificate in Introductory Data Analytics**](https://www.ucd.ie/professionalacademy/findyourcourse/pd_data_analytics/)
