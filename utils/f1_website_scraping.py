@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 from exceptions.exceptions import *
 
 
-def get_circuit_name(url: str):
+def _get_circuit_name(url: str):
     """
     Given the url to a race, get the name of a circuit.
 
@@ -41,7 +41,7 @@ def fetch_base_urls(year: str):
     for url in soup.find_all("a"):
         if f"results.html/{year}/races/" in str(url.get("href")):
             race_results_url = "https://www.formula1.com{}".format(url.get("href"))
-            circuit_name = get_circuit_name(race_results_url)
+            circuit_name = _get_circuit_name(race_results_url)
             urls[circuit_name.upper()] = race_results_url.replace("race-result.html", "")
 
     return urls

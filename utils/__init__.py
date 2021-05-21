@@ -51,6 +51,7 @@ def fetch_path(key: str):
         sys.exit(f"There is no configuration for {key} in the config file.")
 
 
+# Deprecated
 def extract_matching_charactors(pattern: str, strings: list):
     """
     Remove charactors from a list of strings that do not match a pattern.
@@ -91,6 +92,7 @@ def convert_milliseconds(time: str):
     return converted
 
 
+# Deprecated
 def get_average(times: list):
     """
     Given a list of lap times, convert each value to milliseconds and calculate
@@ -114,14 +116,13 @@ def get_average(times: list):
 Pandas functions
 """
 
-
 def csv_documents():
     """
     Return a dictionary representing each csv file
     in the directory specified in the config
 
     {
-        "RACE-RESULTS": path/to/race-results.csv,
+        "RACE-RESULTS": /path/to/race-results.csv,
         [...]
     }
     """
@@ -185,16 +186,10 @@ def _join_dataframes(dataframes: list, key: str):
     :param key: the common index to join the frames on
     :type str
     """
-    if not len(dataframes) == 2 or not key:
-        raise Exception(
-            "Two dataframes (list) and a index key (string) required.")
-
-    '''
     if not len(dataframes) == 2:
         raise InsufficientParametersException("Two dataframes required.")
     if not key:
         raise MissingParametersException("key parameter required.")
-    '''
 
     return dataframes[0].set_index(key).join(dataframes[1].set_index(key))
 
@@ -256,17 +251,67 @@ def fetch_year_data(year: int, entity: str = None):
 
 
 """
-Matplotlib functions
+Graphing functions
 """
 
+def clear_canvas(figsize: tuple = None):
+    """
+    Clear the canvas and set the default chart theme.
 
-def export_graph(title: str, path: str, use_legend=False):
+    :param figsize: the size of the chart (width, height)
+    :type tuple
+    """
+    plt.clf()
+    if figsize:
+        plt.figure(figsize=figsize)
+    sns.set_theme(style="darkgrid", font="sans", context="paper")
+
+
+def configure_graph(title : str,
+                    xlabel: str = None,
+                    ylabel: str = None, 
+                    xticks: str = None,
+                    yticks: str = None,
+                    set_grid=False):
+    """ PLACEHOLDER. FILL THIS IN!
+
+    :param title: set chart title
+    :type str
+
+    :param xlabel: set label for the x axis.
+    :type str
+
+    :param ylabel: set label for the y axis.
+    :type str
+
+    :param xticks: set parameters for the x axis.
+    :type str
+
+    :param yticks: set parameters for the y axis.
+    :type str
+
+    :param set_grid: draw a grid on the chart.
+    :type bool
+    :default False
+    """
+    plt.suptitle(title, fontsize=20, fontfamily="serif")
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.grid(set_grid)
+
+    if xticks:
+        rotation = xticks["rotation"]
+        plt.xticks(rotation=rotation, fontsize=10)
+
+    if yticks:
+        rotation = yticks["rotation"]
+        plt.yticks(rotation=rotation, fontsize=10)
+
+
+def export_graph(path: str, use_legend=False):
     """
     Export a chart to a specified location on the disk - with
     a legend if use_legend is set to True.
-
-    :param title: The graph title.
-    :type str
 
     :param path: where the graph is stored locally.
     :type str
@@ -274,27 +319,7 @@ def export_graph(title: str, path: str, use_legend=False):
     :param use_legend: display a legend on the graph.
     :type bool
     :default False
-
     """
     if use_legend:
         plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
-    # plt.title(title)
     plt.savefig(path, bbox_inches='tight')
-
-
-def configure_graph(set_grid=False):
-    """ PLACEHOLDER. FILL THIS IN!
-
-    :param set_grid: 
-    :type bool
-    """
-    plt.clf()  #  Clear the canvas.
-    sns.set_theme(style="darkgrid", context="paper")
-    plt.grid(set_grid)
-
-
-"""
-Seaborn functions
-"""
-
-# TODO: Add + use some functions here
