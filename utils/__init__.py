@@ -116,6 +116,7 @@ def get_average(times: list):
 Pandas functions
 """
 
+
 def csv_documents():
     """
     Return a dictionary representing each csv file
@@ -254,6 +255,7 @@ def fetch_year_data(year: int, entity: str = None):
 Graphing functions
 """
 
+
 def clear_canvas(figsize: tuple = None):
     """
     Clear the canvas and set the default chart theme.
@@ -267,9 +269,9 @@ def clear_canvas(figsize: tuple = None):
     sns.set_theme(style="darkgrid", font="sans", context="paper")
 
 
-def configure_graph(title : str,
+def configure_graph(title: str,
                     xlabel: str = None,
-                    ylabel: str = None, 
+                    ylabel: str = None,
                     xticks: str = None,
                     yticks: str = None,
                     set_grid=False):

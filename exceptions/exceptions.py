@@ -20,7 +20,7 @@ class MissingParametersException(Exception):
 
 class InsufficientParametersException(Exception):
     """
-    Raise this exception if a required parameter is absent.
+    Raise this exception if the required number of parameters is not passed.
     """
 
     def __init__(self, message=""):

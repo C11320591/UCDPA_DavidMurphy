@@ -29,7 +29,7 @@ def fetch_base_urls(year: str):
     """
     this_year = datetime.now().year
 
-    if int(year) not in range(1950, this_year):  # Formula1 was founded in 1950
+    if int(year) not in range(1950, this_year + 1):  # Formula1 was founded in 1950
         sys.exit(
             f"No race data available in {year} - must be within 1950-{this_year}")
 
@@ -47,6 +47,7 @@ def fetch_base_urls(year: str):
     return urls
 
 
+# Deprecated
 def fetch_race_urls(year: str, circuit_name: str):
     """
     Given a year and the name of a circuit, fetch the race data urls for

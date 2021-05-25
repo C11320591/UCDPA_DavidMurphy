@@ -95,14 +95,19 @@ def retirements(years: str):
     total_df["statusId"] = total_df["statusId"].map(status_code)  # substitute the ids for the status names.
     total_df.sort_values(by=["count"], ascending=False, inplace=True)  # sort by count of retirements descending.
 
+
     # Configure Graph + Plot Data
     utils.clear_canvas(figsize=(18.5, 10.5))
-    sns.barplot(x="count", y="statusId", data=total_df)
+    sns.barplot(x="count", y="statusId", data=total_df, palette="Reds_d")
 
-    utils.configure_graph(title="Retirements in {}".format(years_title),
-                          xlabel="Count",
+    utils.configure_graph(title="{} Formula 1: Total Retirements".format(years_title),
+                          xlabel="Number of retirements",
                           ylabel="Cause",
                           set_grid=True)
+
+    # Set the x tick intervals to be more granular
+    x_intervals = [total_df["count"].min(), total_df["count"].max()]
+    plt.xticks(np.arange(min(x_intervals), max(x_intervals)+1, 1))
 
     # Export graph
     utils.export_graph(path=f"/{GRAPHS_DIR}/retirements_total-{years_title}.png", use_legend=True)
@@ -202,16 +207,20 @@ def places_gained_lost(year: str):
     # Configure graph
     utils.clear_canvas()
     fig, ax = plt.subplots(figsize=(14, 10))
-    utils.configure_graph(title="Places Gained & Lost {}".format(year),
+    utils.configure_graph(title="{} Formula 1: Places Gained/Lost".format(year),
                         xlabel="Driver",
                         ylabel=None,
                         xticks={"rotation": 45},
                         set_grid=True)
 
     # Plot bars
-    ax = sns.barplot(x=drivers_df.index, y=drivers_df.Gained, data=drivers_df)
-    ax = sns.barplot(x=drivers_df.index, y=drivers_df.Lost, data=drivers_df)
-    ax.set(ylabel="Places (+/-)")
+    ax = sns.barplot(x=drivers_df.index, y=drivers_df.Gained, data=drivers_df, color="#94FF52")
+    ax = sns.barplot(x=drivers_df.index, y=drivers_df.Lost, data=drivers_df, color="#FF5252")
+    ax.set(ylabel="Places (-/+)")
+
+    # Set the y tick intervals a bit more granular that 10 seconds.
+    y_intervals = [drivers_df.Lost.min(), drivers_df.Gained.max()]
+    plt.yticks(np.arange(min(y_intervals), max(y_intervals)+1, 5.0).astype(int))
 
     # Export graph
     utils.export_graph(path=f"/{GRAPHS_DIR}/gained_lost-{year}.png", use_legend=False)
@@ -256,10 +265,6 @@ def lap_times(year: str, params: str = None):
         
         race_lap_times = lap_times_df.loc[lap_times_df.raceId == race]
 
-        # Using pandas built-in functions; get the average, fastest, and slowest times
-        race_fastest_lap["Average"] = race_lap_times.milliseconds.mean()
-        race_fastest_lap["Fastest"] = race_lap_times.milliseconds.min()
-
         for driver in race_participants:
             driver_fastest = race_lap_times.loc[race_lap_times.driverId == driver].milliseconds.min()
 
@@ -270,6 +275,13 @@ def lap_times(year: str, params: str = None):
             driver_code = drivers[driver]
 
             race_fastest_lap[driver] = driver_fastest
+
+        # Fastest time
+        race_fastest_lap["Fastest"] = race_lap_times.milliseconds.min()
+
+        # Get the average of all fastest times
+        fastest_times =  list(filter(lambda v: v==v, race_fastest_lap.values()))  # use filter to remove NaN values
+        race_fastest_lap["Average"] = np.array(fastest_times).mean()
         
         fastest_laps[grand_prix] = race_fastest_lap
 
@@ -283,10 +295,10 @@ def lap_times(year: str, params: str = None):
 
     # Configure Graph
     utils.clear_canvas(figsize=(25, 10))
-    utils.configure_graph(title="Lap Times {}".format(year),
+    utils.configure_graph(title="{} Formula 1 Lap Times".format(year),
                           xlabel="Grand Prix",
                           ylabel="Time (seconds)",
-                          xticks={"rotation": 70},
+                          xticks={"rotation": 45},
                           set_grid=True)
 
     params = params.split(",") if params else ['Average', 'Fastest']  # set default if not specified
@@ -301,6 +313,10 @@ def lap_times(year: str, params: str = None):
             continue
 
         plt.plot(fastest_laps_df.index, fastest_laps_df[column], color="grey", label=None, alpha=0.25)
+
+    # Set the y tick intervals a bit more granular.
+    y_intervals = [fastest_laps_df.min().min(), fastest_laps_df.max().max()]
+    plt.yticks(np.arange(min(y_intervals), max(y_intervals)+1, 3.0).astype(int))
 
     # Export graph
     utils.export_graph(path=f"/{GRAPHS_DIR}/fastest_laps-{year}.png", use_legend=True)
@@ -366,7 +382,7 @@ def drivers_season(year: str, params: str = None):
     # Configure Graph
     utils.clear_canvas()
     f, (ax1, ax2, ax3, ax4, ax5, ax6) = plt.subplots(6, 1, figsize=(14, 10), sharex=True)
-    utils.configure_graph(title="Drivers Statistics {}".format(year),
+    utils.configure_graph(title="{} Formula 1 Drivers Statistics".format(year),
                           xlabel="Driver",
                           ylabel=None,
                           xticks={"rotation": 45},
@@ -430,7 +446,7 @@ def drivers_season(year: str, params: str = None):
     fig.set_size_inches(18.5, 10.5)
 
     # Configure Graph
-    utils.configure_graph(title="Drivers Championship {}".format(year),
+    utils.configure_graph(title="{} Formula 1 Drivers Championship".format(year),
                           xlabel="Grand Prix",
                           ylabel="Points",
                           xticks={"rotation": 45},
@@ -469,7 +485,7 @@ if __name__ == "__main__":
 
     options = [
         "drivers-championship",
-        "lap-times"
+        "lap-times",
         "places",
         "retirements"
     ]
