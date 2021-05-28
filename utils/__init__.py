@@ -3,7 +3,6 @@ import re
 import sys
 import json
 import urllib
-import pathlib
 import numpy as np
 import pandas as pd
 import configparser
@@ -15,6 +14,17 @@ from exceptions.exceptions import *
 
 # CONFIG_FILE = "./config/system_configs.ini"
 CONFIG_FILE = "/home/ubuntu/assignment/repo/config/system_configs.ini"
+DISPLAY_FONT = "\033[1;32m{}\033[0m"
+
+
+def pretty_print(message: str):
+    """
+    Print messages to STDOUT
+
+    :param message: the message to print.
+    :type str
+    """
+    print(DISPLAY_FONT.format(f"    {message}"))
 
 
 def fetch_definitions(key: str):
@@ -75,7 +85,7 @@ def convert_milliseconds(time: str):
     :param time: milliseconds / elasped time [Format "mm:ss:ms"]
     :type str
     """
-    if "\\N" in str(time):  # Don't execute for NaN values.
+    if "\\N" in str(time):  # Don't execute for NaN values
         return
 
     if ":" in str(time):
@@ -102,7 +112,7 @@ def get_average(times: list):
     :type list
     """
     if isinstance(times[0], str):
-        times = [x for x in times if ":" in x]  # Remove items that do not match a lap time.
+        times = [x for x in times if ":" in x]  # Remove items that do not match a lap time
         times = list(map(convert_milliseconds, times))
     else:
         times = [x for x in times if isinstance(x, int)]
@@ -154,7 +164,7 @@ def generate_dataframe_from_url(url: str, index: str = None):
     data_frame = pd.read_html(str(html_table), flavor="bs4", header=[0])[0]
     if index:
         data_frame.set_index(index.capitalize(), inplace=True)
-    data_frame.dropna(axis="columns", inplace=True)  # Drop columns that contain NaN values.
+    data_frame.dropna(axis="columns", inplace=True)  # Drop columns that contain NaN values
 
     return data_frame
 
@@ -208,7 +218,7 @@ def fetch_year_data(year: int, entity: str = None):
     """
     documents = csv_documents()
 
-    # Fetch the unique race ids for each races in year specified.
+    # Fetch the unique race ids for each races in year specified
     races_df = generate_dataframe_from_csv(documents["RACES"])
     race_ids = list(races_df.loc[races_df["year"] == int(year)]["raceId"])
 
@@ -275,7 +285,8 @@ def configure_graph(title: str,
                     xticks: str = None,
                     yticks: str = None,
                     set_grid=False):
-    """ PLACEHOLDER. FILL THIS IN!
+    """
+    Configure some parameters for chart presentation.
 
     :param title: set chart title
     :type str
@@ -325,3 +336,4 @@ def export_graph(path: str, use_legend=False):
     if use_legend:
         plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
     plt.savefig(path, bbox_inches='tight')
+    pretty_print(f"→ Chart exported to {path}")

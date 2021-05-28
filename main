@@ -1,21 +1,19 @@
 #!/usr/bin/env python3
 
-"""
-    Author:     David Murphy
-    Course:     UCDPA 
-    Release:    May, 2021
-"""
-import os
+"""""""""""""""""""""""""""""""""""""""
+Author:     David Murphy
+Course:     UCDPA 
+Release:    May, 2021
+"""""""""""""""""""""""""""""""""""""""
 import sys
+import utils
 import random
 import argparse
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import matplotlib.pyplot as plt
 from collections import Counter
-
-import utils
+import matplotlib.pyplot as plt
 from exceptions.exceptions import *
 from utils.f1_website_scraping import *
 
@@ -40,7 +38,6 @@ def retirements(years: str):
     :param years: range of years to collect data and generate charts for. [Format "YYYY-YYYY"]
     :type str
     """
-    # years_title = "-".join((years[0], years[-1]))
     years_title = years
     years = years.split("-")
     years = list(map(lambda d: int(d), years))
@@ -50,9 +47,10 @@ def retirements(years: str):
     # Generate DataFrames
     status_df = utils.generate_dataframe_from_csv(utils.csv_documents()["STATUS"])
 
-    retirement_causes = utils.fetch_definitions("RETIREMENT_CAUSES")  # fetch classifications for retirements.
+    # Fetch classifications for retirements
+    retirement_causes = utils.fetch_definitions("RETIREMENT_CAUSES")
 
-    # Initialize some counters to keep track of retirements per driver/constructor/year.
+    # Initialize some counters to keep track of retirements per driver/constructor/year
     drivers = Counter()
     constructors = Counter()
     retirements = Counter()
@@ -61,10 +59,10 @@ def retirements(years: str):
     """
     Bar chart
     """
-    
+    utils.pretty_print("Calculating number of retirements..")
+
     # For each year, identify the drivers + teams who retired from each race and the 
     # cause for their retirement (stored in the status.csv document)
-    
     for year in years:
         race_ids, results_df = utils.fetch_year_data(year)
         annual_retirements[year] = dict()
@@ -80,27 +78,27 @@ def retirements(years: str):
                 constructors[constructor] += 1
                 retirements[status] += 1
 
-            if not annual_retirements[year].get(status):  # if the status does not exist in the dict, set it.
+            if not annual_retirements[year].get(status):  # if the status does not exist in the dict, set it
                 annual_retirements[year][status] = 1
                 continue
             annual_retirements[year][status] += 1
 
-    status_code = dict()  # Create a k,v cache for the status ids + names, rather than loading the entire list from csv.
+    status_code = dict()  # Create a k,v cache for the status ids + names, rather than loading the entire list from csv
     for status, count in retirements.items():
         if not status in status_code.keys():
             status_name = status_df.loc[status_df["statusId"] == status]["status"].values[0]
             status_code[status] = status_name
 
     total_df = pd.DataFrame(retirements.items(), columns=["statusId", "count"])
-    total_df["statusId"] = total_df["statusId"].map(status_code)  # substitute the ids for the status names.
-    total_df.sort_values(by=["count"], ascending=False, inplace=True)  # sort by count of retirements descending.
+    total_df["statusId"] = total_df["statusId"].map(status_code)  # substitute the ids for the status names
+    total_df.sort_values(by=["count"], ascending=False, inplace=True)  # sort by count of retirements descending
 
 
-    # Configure Graph + Plot Data
+    # Configure chart + plot data
     utils.clear_canvas(figsize=(18.5, 10.5))
     sns.barplot(x="count", y="statusId", data=total_df, palette="Reds_d")
 
-    utils.configure_graph(title="{} Formula 1: Total Retirements".format(years_title),
+    utils.configure_graph(title=f"{years_title} Formula 1: Total Retirements",
                           xlabel="Number of retirements",
                           ylabel="Cause",
                           set_grid=True)
@@ -109,25 +107,22 @@ def retirements(years: str):
     x_intervals = [total_df["count"].min(), total_df["count"].max()]
     plt.xticks(np.arange(min(x_intervals), max(x_intervals)+1, 1))
 
-    # Export graph
-    utils.export_graph(path=f"/{GRAPHS_DIR}/retirements_total-{years_title}.png", use_legend=True)
+    # Export chart
+    utils.export_graph(path=f"{GRAPHS_DIR}/retirements_total-{years_title}.png", use_legend=True)
 
 
     """
     Pie chart
     """
-    retirements_pc = dict()  # Initialize a dictionary for storing retirements percentages.
+    utils.pretty_print("Calculating retirements breakdown..")
 
-    for status, num in retirements.items():
-        """
-        if not status in status_code.keys():
-            status_name = status_df.loc[status_df["statusId"] == status]["status"].values[0]
-            status_code[status] = status_name
-        """
+    # Initialize a dictionary for storing retirements percentages
+    retirements_pc = dict()
+
+    for status, count in retirements.items():
         name = status_code[status]
-        percentage = (num / sum(retirements.values())) * 100  # Calculate the retirement percentage against the total
+        percentage = (count / sum(retirements.values())) * 100  # Calculate the retirement percentage against the total
         retirements_pc[name] = round(percentage, 3)  # Round percentage to two decimal points
-
 
     # Using the retirements categories defined in retirement_causes, populate the categories with the retirements count
     causes = list(retirement_causes.keys())
@@ -137,21 +132,21 @@ def retirements(years: str):
             if cause in retirement_causes[c]:
                 retirement_stats[c] += pc
 
-    # Sort counter, set values for pie chart labels and percentages.
+    # Sort counter, set values for pie chart labels and percentages
     retirement_stats = dict(retirement_stats.most_common())
     labels = list(retirement_stats.keys())
     percentages = list(retirement_stats.values())
 
-    # Configure Graph
+    # Configure chart
     utils.clear_canvas(figsize=(20, 10))
     fig, ax = plt.subplots()
 
     # Plot slices
     ax.pie(percentages, labels=labels, shadow=True, startangle=90)
-    ax.axis('equal')
+    ax.axis("equal")
 
-    # Export graph
-    utils.export_graph(path=f"/{GRAPHS_DIR}/retirements_breakdown-{years_title}.png", use_legend=True)
+    # Export chart
+    utils.export_graph(path=f"{GRAPHS_DIR}/retirements_breakdown-{years_title}.png", use_legend=True)
 
 
 def places_gained_lost(year: str):
@@ -164,31 +159,34 @@ def places_gained_lost(year: str):
     :param year: year to collect data and generate charts for. [Format "YYYY"]
     :type str
     """
-    # Get the race urls for each race that took places in the year specified.
+    utils.pretty_print("Calculating places gained/lost per driver..")
+
+    # Get the race urls for each race that took places in the year specified
     base_urls = fetch_base_urls(year)
     
-    # Create a DataFrame for tracking the number of places gained/lost per driver.
+    # Create a DataFrame for tracking the number of places gained/lost per driver
     drivers_df = pd.DataFrame(columns=["Gained", "Lost"])
 
     for race in base_urls.values():
 
-        # Generate dataframes from the tables scrapped using the urls - just return the index (driver) and position.
+        # Generate dataframes from the tables scrapped using the urls - return the index (driver) and position
         starting_grid_url = race + "starting-grid.html"
         starting_grid = utils.generate_dataframe_from_url(starting_grid_url, index="Driver").Pos
         race_results_url = race + "race-results.html"
         resulting_grid = utils.generate_dataframe_from_url(race_results_url, index="Driver").Pos
 
-        # Identify what drivers took part in the race, some of which may not have participated in qualifying.
+        # Identify what drivers took part in the race, some of which may not have participated in qualifying
         race_participants = resulting_grid.index.to_list()
 
         for driver in race_participants:
 
-            if driver not in drivers_df.index:  # If driver not an index, append row.
+            # If driver not an index, append row.
+            if driver not in drivers_df.index:
                 drivers_df.loc[driver] = 0
 
             try:
                 start = starting_grid.index.get_loc(driver) + 1
-            except KeyError:  # If driver not present in starting-grid table, they start from back of grid.
+            except KeyError:  # If driver not present in starting-grid table, they start from back of grid
                 start = 20
             end = resulting_grid.index.get_loc(driver) + 1
 
@@ -198,32 +196,31 @@ def places_gained_lost(year: str):
             else:
                 drivers_df.at[driver, "Lost"] += diff
 
-    # Reindex using driver codes.
+    # Reindex using driver codes
     drivers = drivers_df.index.to_list()
     codes = list(map(lambda d: d[-3:], drivers))
     drivers_df.rename(index=dict(zip(drivers, codes)), inplace=True)
 
-   
-    # Configure graph
+    # Configure chart
     utils.clear_canvas()
     fig, ax = plt.subplots(figsize=(14, 10))
-    utils.configure_graph(title="{} Formula 1: Places Gained/Lost".format(year),
+    utils.configure_graph(title=f"{year} Formula 1: Places Gained/Lost",
                         xlabel="Driver",
                         ylabel=None,
                         xticks={"rotation": 45},
                         set_grid=True)
 
     # Plot bars
-    ax = sns.barplot(x=drivers_df.index, y=drivers_df.Gained, data=drivers_df, color="#94FF52")
-    ax = sns.barplot(x=drivers_df.index, y=drivers_df.Lost, data=drivers_df, color="#FF5252")
+    ax = sns.barplot(x=drivers_df.index, y=drivers_df.Gained, data=drivers_df, color="#94FF52")  # Lime
+    ax = sns.barplot(x=drivers_df.index, y=drivers_df.Lost, data=drivers_df, color="#FF5252")  # Red
     ax.set(ylabel="Places (-/+)")
 
-    # Set the y tick intervals a bit more granular that 10 seconds.
+    # Set the y tick intervals a bit more granular.
     y_intervals = [drivers_df.Lost.min(), drivers_df.Gained.max()]
     plt.yticks(np.arange(min(y_intervals), max(y_intervals)+1, 5.0).astype(int))
 
-    # Export graph
-    utils.export_graph(path=f"/{GRAPHS_DIR}/gained_lost-{year}.png", use_legend=False)
+    # Export chart
+    utils.export_graph(path=f"{GRAPHS_DIR}/gained_lost-{year}.png", use_legend=False)
 
 
 def lap_times(year: str, params: str = None):
@@ -238,10 +235,12 @@ def lap_times(year: str, params: str = None):
 
     :param params: comma-seperated list of drivers statistics to highlight. [Format "Average,Fastest,HAM"]
     :type str
-    :default "Average,Fastest,Slowest"
+    :default "Average,Fastest"
     """
     if int(year) not in range(2004, 2021):
         sys.exit("Woah, we don't have that year on file. Please select a year between 2004 - 2020")
+
+    utils.pretty_print("Calculating fastest lap times..")
 
     fastest_laps = dict()
     race_ids, full_df = utils.fetch_year_data(year, entity="LAPS")
@@ -255,20 +254,19 @@ def lap_times(year: str, params: str = None):
     locations = list(races_df[races_df["raceId"].isin(race_ids)].sort_values(by=["raceId"], ascending=True)["name"])
     locations = list(map(lambda d: d.replace(" Grand Prix", "").upper(), locations))  # "Italian Grand Prix" -> "ITALIAN"
 
-    drivers = dict()  # Create a k,v cache for the driver ids + codes, rather than loading the entire list from csv.
+    drivers = dict()  # Create a k,v cache for the driver ids + codes, rather than loading the entire list from csv
     
     for race in race_ids:
         grand_prix = locations[race_ids.index(race)]
         race_fastest_lap = dict()
 
         race_participants = full_df.loc[full_df.raceId == race].index.to_list()
-        
         race_lap_times = lap_times_df.loc[lap_times_df.raceId == race]
 
         for driver in race_participants:
             driver_fastest = race_lap_times.loc[race_lap_times.driverId == driver].milliseconds.min()
 
-            # Update drivers cache with driver code if it does not already exist.
+            # Update drivers cache with driver code if it does not already exist
             if not driver in drivers.keys():
                 driver_code = drivers_df.loc[drivers_df.driverId == driver].code.values[0]
                 drivers[driver] = driver_code
@@ -288,25 +286,26 @@ def lap_times(year: str, params: str = None):
     # Create + configure DataFrame
     fastest_laps_df = pd.DataFrame(fastest_laps).transpose()
     fastest_laps_df.index.name = "Grand Prix"
-    fastest_laps_df.replace("\\N", np.NaN, inplace=True)
-    fastest_laps_df.rename(columns=drivers, inplace=True)  # replace driverIds with driver codes.
+    fastest_laps_df.replace("\\N", np.NaN, inplace=True)  # replace useless values with NaN
+    fastest_laps_df.rename(columns=drivers, inplace=True)  # replace driverIds with driver codes
 
     fastest_laps_df = fastest_laps_df.apply(lambda d: d / 1000, axis=1)  # Convert times from microseconds to seconds
 
-    # Configure Graph
+    # Configure chart
     utils.clear_canvas(figsize=(25, 10))
-    utils.configure_graph(title="{} Formula 1 Lap Times".format(year),
+    utils.configure_graph(title=f"{year} Formula 1 Lap Times",
                           xlabel="Grand Prix",
                           ylabel="Time (seconds)",
                           xticks={"rotation": 45},
                           set_grid=True)
 
-    params = params.split(",") if params else ['Average', 'Fastest']  # set default if not specified
+    params = params.split(",") if params else ["Average", "Fastest"]  # set params default if not specified
 
     # Plot data
     for index, column in enumerate(fastest_laps_df.columns):
 
-        for param in params:  # Highlight the selected parameters, set everything else to lower opacity
+        # Highlight the selected parameters, set everything else to lower opacity
+        for param in params:
             if column == param:
                 color = COLOURS.pop(random.randrange(len(COLOURS)))  # select + remove random colour from COLOURS
                 plt.plot(fastest_laps_df.index, fastest_laps_df[column], color=color, label=param, linestyle="--")
@@ -318,9 +317,8 @@ def lap_times(year: str, params: str = None):
     y_intervals = [fastest_laps_df.min().min(), fastest_laps_df.max().max()]
     plt.yticks(np.arange(min(y_intervals), max(y_intervals)+1, 3.0).astype(int))
 
-    # Export graph
-    utils.export_graph(path=f"/{GRAPHS_DIR}/fastest_laps-{year}.png", use_legend=True)
-
+    # Export chart
+    utils.export_graph(path=f"{GRAPHS_DIR}/fastest_laps-{year}.png", use_legend=True)
 
 
 def drivers_season(year: str, params: str = None):
@@ -343,46 +341,44 @@ def drivers_season(year: str, params: str = None):
     :param params: comma-seperated list of drivers to highlight. [Format "HAM,PER,MSC"]
     :type str
     """
+    # Generate DataFrames
     race_ids, full_df = utils.fetch_year_data(year, entity="DRIVER")
     results_df = full_df[full_df["raceId"].isin(race_ids)]
-
-    # Generate DataFrames
     races_df = utils.generate_dataframe_from_csv(utils.csv_documents()["RACES"])
     
-    # Using the raceIds, fetch the name of the race
+    # Using the raceIds list, fetch the name of the race
     locations = list(races_df[races_df["raceId"].isin(race_ids)].sort_values(by=["raceId"], ascending=True)["name"])
     locations = list(map(lambda d: d.replace(" Grand Prix", "").upper(), locations))  # "Austrian Grand Prix" -> "AUSTRIAN"
 
     """
     Driver Statistics
     """
+    utils.pretty_print("Calculating per-driver statistics..")
 
-    # Fetch statistics from DataFrame, store in dictionaries.
+    # Fetch statistics from DataFrame, store in per-stat dictionaries
     wins = results_df.loc[results_df["positionOrder"] == 1].groupby("code").count()["resultId"].to_dict()
     poles = results_df.loc[results_df["grid"] == 1].groupby("code").count()["resultId"].to_dict()
     wins_from_pole = results_df.loc[(results_df["positionOrder"] == 1) & (results_df["grid"] == 1)].groupby("code").count()["resultId"].to_dict()
     podiums =  results_df.loc[results_df["positionOrder"] <= 3].groupby("code").count()["resultId"].to_dict()
     retirements = results_df.loc[results_df["positionText"] == "R"].groupby("code").count()["resultId"].to_dict()
 
+    # Initialize a counter for tracking per-driver fastest laps
     fastest_laps = Counter()
     for race in race_ids:
         race_df = results_df.loc[results_df["raceId"] == race]
         driver = race_df[race_df.fastestLapTime == race_df.fastestLapTime.min()]["code"].values[0]
         fastest_laps[driver] += 1
 
-    # Create new DataFrame from dictionaries, add columns names, fill NaNs with zeros.
+    # Create new DataFrame from dictionaries, add columns names, fill NaNs with zeros
     data = [wins, poles, wins_from_pole, podiums, retirements, fastest_laps]
     stats_df = pd.DataFrame(data).transpose()
     stats_df.columns = ["wins", "poles", "wins_from_pole", "podiums", "retirements", "fastest_lap"]
     stats_df.fillna(0, inplace=True)
 
-    """
-    Plot
-    """
-    # Configure Graph
+    # Configure chart
     utils.clear_canvas()
     f, (ax1, ax2, ax3, ax4, ax5, ax6) = plt.subplots(6, 1, figsize=(14, 10), sharex=True)
-    utils.configure_graph(title="{} Formula 1 Drivers Statistics".format(year),
+    utils.configure_graph(title=f"{year} Formula 1 Drivers Statistics",
                           xlabel="Driver",
                           ylabel=None,
                           xticks={"rotation": 45},
@@ -407,12 +403,13 @@ def drivers_season(year: str, params: str = None):
     sns.despine()
     plt.setp(f.axes, yticks=[])
 
-    # Export graph
-    utils.export_graph(path=f"/{GRAPHS_DIR}/driver_stats-{year}.png", use_legend=False)
+    # Export chart
+    utils.export_graph(path=f"{GRAPHS_DIR}/driver_stats-{year}.png", use_legend=False)
 
     """
     Driver Points
     """
+    utils.pretty_print("Calculating per-driver championship points..")
 
     race_results = dict()
     for race in race_ids:
@@ -423,58 +420,55 @@ def drivers_season(year: str, params: str = None):
             driver = drivers[d]
             point = int(points[d])
 
+            # Append to driver points list if it exists, otherwise initialize the list
             if driver in race_results.keys():
                 race_results[driver].append(point)
                 continue
             race_results[driver] = [point]
 
-        
         # If a driver does not participant in this race, append a zero to their list of points 
         for not_racing in [x for x in race_results.keys() if x not in drivers]:
             race_results[not_racing].append(0)
 
     # After collecting the points for all the drivers in each race, prepend a range
-    # of zeros for drivers who did not participate from the opening race.
+    # of zeroes for drivers who did not participate from the opening race
     for driver in race_results.keys():
         missed = len(race_ids) - len(race_results[driver])
 
         for missed_race in range(missed):
             race_results[driver].insert(0, 0)
 
+    # Configure chart
     utils.clear_canvas()
     fig, ax = plt.subplots()
     fig.set_size_inches(18.5, 10.5)
 
-    # Configure Graph
-    utils.configure_graph(title="{} Formula 1 Drivers Championship".format(year),
+    utils.configure_graph(title=f"{year} Formula 1 Drivers Championship",
                           xlabel="Grand Prix",
                           ylabel="Points",
                           xticks={"rotation": 45},
                           set_grid=True)
 
-
-    # sort dictionary by sum of points per driver, helps in understanding graph legend
+    # sort dictionary by sum of points per driver, orders chart legend first -> last
     race_results = {k: v for k, v in sorted(race_results.items(), key=lambda item: sum(item[1]), reverse=True)}
 
-    # Plot Data
+    # Plot lines
     for driver, points in race_results.items():
         accum = list(np.cumsum(points))  # use NumPy to get the cumulative sum of points for each driver
-        color, alpha, marker = "grey", 0.25, "." # set some defaults for the lines
+        alpha, marker, color = 0.25, ".", "grey" # set some defaults for the lines
         if params and driver.upper() in [x.upper() for x in params.split(",")]:
-            color = COLOURS.pop(random.randrange(len(COLOURS)))
-            alpha, marker = 1, "x"
+            alpha, marker, color = 1, "x", COLOURS.pop(random.randrange(len(COLOURS)))
         ax.plot(locations, accum, color=color, label=driver, marker=marker, alpha=alpha)
 
-    # Export graph
-    utils.export_graph(path=f"/{GRAPHS_DIR}/drivers_championship-{year}.png", use_legend=True)
+    # Export chart
+    utils.export_graph(path=f"{GRAPHS_DIR}/drivers_championship-{year}.png", use_legend=True)
 
 
 if __name__ == "__main__":
 
-    """
-    [Usage]
-        ./main --option OPTION --year YEAR ("YYYY")  --params PARAMS ("X,Y,Z")
-    """
+    # ==================================================================================
+    #   Usage: ./main --option OPTION --year YEAR ("YYYY")  --params PARAMS ("X,Y,Z")
+    # ==================================================================================
 
     # Handle arguments
     parser = argparse.ArgumentParser()
@@ -490,16 +484,15 @@ if __name__ == "__main__":
         "retirements"
     ]
 
-    # Set params as None if not set by user input
-    params = args.params if args.params else None
-
     if not args.option or args.option not in options:
         sys.exit(f"Please select option (using -o) from list:\n{options}")
 
     if not args.year:
-        if not args.year:
-            raise MissingParametersException("year")        
+            raise MissingParametersException("year")
 
+    # Set params as None if not set by user input
+    params = args.params if args.params else None
+   
     if args.option == "drivers-championship":
         drivers_season(args.year, params=params)
 

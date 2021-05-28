@@ -1,8 +1,7 @@
 ## Project Description
 
 Generate a series of charts to visualize Formula 1 race statistics from a specified year or list of years.
-
-
+* Example: [2020 Charts](https://github.com/C11320591/UCDPA_DavidMurphy/blob/master/data/exported/2020-charts.pdf)
 
 ### Notes
 * Charts are generated using data collected from either local csv files or via scraping the Formula1 website.
@@ -15,10 +14,13 @@ specified in the [config](https://github.com/C11320591/UCDPA_DavidMurphy/blob/ma
 ```
 
 #### Options
-* **drivers-year**: charts representing statistics for each driver in a specified year.
-* **retirements**: breakdown of the retirements that took place in a specified list of years.
-* **gained-lost**: bar chart representing the total number of places lost + gained in a specified year.
-* **fastest-laps**: line graph representing the fastest lap times per driver in each race of a specified year.
+* **drivers-year**: two charts representing statistics for each driver.
+* **retirements**: two charts breakdown of the retirements that took place.
+* **gained-lost**: bar chart representing the total number of places lost + gained.
+* **fastest-laps**: line chart representing the fastest lap times per driver in each race.
+
+#### Params
+Comma-separated list of driver codes. For example &rarr; `"HAM,VER,BOT,PER"`
 
 
 ### Resources

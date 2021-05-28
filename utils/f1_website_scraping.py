@@ -40,7 +40,7 @@ def fetch_base_urls(year: str):
     urls = dict()
     for url in soup.find_all("a"):
         if f"results.html/{year}/races/" in str(url.get("href")):
-            race_results_url = "https://www.formula1.com{}".format(url.get("href"))
+            race_results_url = f"https://www.formula1.com{url.get('href')}"
             circuit_name = _get_circuit_name(race_results_url)
             urls[circuit_name.upper()] = race_results_url.replace("race-result.html", "")
 
