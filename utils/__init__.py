@@ -3,7 +3,6 @@ import re
 import sys
 import json
 import urllib
-import numpy as np
 import pandas as pd
 import configparser
 import seaborn as sns
@@ -12,9 +11,8 @@ import matplotlib.pyplot as plt
 from exceptions.exceptions import *
 
 
-# CONFIG_FILE = "./config/system_configs.ini"
 CONFIG_FILE = "/home/ubuntu/assignment/repo/config/system_configs.ini"
-DISPLAY_FONT = "\033[1;32m{}\033[0m"
+DISPLAY_FONT = "\033[1;32m{}\033[0m"  # Green
 
 
 def pretty_print(message: str):
@@ -120,6 +118,7 @@ def get_average(times: list):
     average_time = sum(times) / len(times)
 
     return [convert_milliseconds(average_time), average_time]
+
 
 
 """
@@ -259,6 +258,7 @@ def fetch_year_data(year: int, entity: str = None):
         full_df = _join_dataframes([constructors_df, results_in_year], key="constructorId")
 
         return race_ids, constructor_ids, constructors_df, full_df
+
 
 
 """

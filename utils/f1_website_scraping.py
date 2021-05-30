@@ -11,6 +11,7 @@ def _get_circuit_name(url: str):
 
     :param url - any of the child urls for the race:
             Eg. https://www.formula1.com/en/results.html/{year}/races/{race_no}/{country}/race-result.html
+    :type str
     """
     race_url = urllib.request.urlopen(url).read()
     return BeautifulSoup(race_url, "html5lib").find_all("span", {"class": "circuit-info"})[0].get_text()

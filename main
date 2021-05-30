@@ -34,7 +34,6 @@ def retirements(years: str):
     [2] Pie chart representing the percentage of retirements that the incidents contribute.
         This function fetches the incident classifications from "definitions.json"
 
-    
     :param years: range of years to collect data and generate charts for. [Format "YYYY-YYYY"]
     :type str
     """
@@ -332,6 +331,7 @@ def drivers_season(year: str, params: str = None):
         - Pole positions
         - Wins from pole positions
         - Fastest Laps
+        - Retirements
     
     [2] Line chart representing the points accumulated by each driver in the year specified.
 
